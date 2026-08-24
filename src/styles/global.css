@@ -1,0 +1,115 @@
+@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@500;600;700;800&family=Nunito:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --primary: #06A3DA;
+  --primary-dark: #0487b8;
+  --secondary: #34AD54;
+  --light: #EEF9FF;
+  --dark: #091E3E;
+  --danger: #e53e3e;
+  --amber: #d97706;
+  /* Same font pairing as payport.africa: Rubik for headings, Nunito for body */
+  --font: 'Nunito', sans-serif;
+  --font-display: 'Rubik', sans-serif;
+}
+
+/* Light theme (default and only theme now — dark mode toggle removed) */
+[data-theme="light"], :root {
+  --bg: #ffffff;
+  --bg-2: #f4f8fb;
+  --bg-card: #ffffff;
+  --bg-card-2: #f4f8fb;
+  --text: #091E3E;
+  --text-2: #5a7a91;
+  --border: rgba(6,163,218,0.15);
+  --shadow: 0 4px 24px rgba(6,163,218,0.1);
+  --nav-bg: #ffffff;
+  --footer-bg: #091E3E;
+}
+
+/* Dark theme variables kept for any component that still reads them,
+   but there's no toggle in the UI anymore — light is the only reachable state. */
+[data-theme="dark"] {
+  --bg: #0a0f1e;
+  --bg-2: #0f1829;
+  --bg-card: #111827;
+  --bg-card-2: #1a2332;
+  --text: #e8f4fd;
+  --text-2: #8baec4;
+  --border: rgba(6,163,218,0.2);
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  --nav-bg: #0a0f1e;
+  --footer-bg: #050a12;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font);
+  color: var(--text);
+  transition: background 0.3s, color 0.3s;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  /* Same subtle background treatment as payport.africa, so the app doesn't feel like a different product */
+  background:
+    radial-gradient(1100px 550px at 12% -8%, rgba(6,163,218,0.055), transparent),
+    radial-gradient(900px 500px at 100% 15%, rgba(52,173,84,0.045), transparent),
+    radial-gradient(800px 500px at 50% 100%, rgba(108,92,231,0.03), transparent),
+    #FBFDFF;
+  background-attachment: fixed;
+}
+
+h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
+
+/* Responsive container */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Responsive grid */
+@media (max-width: 768px) {
+  .hide-mobile { display: none !important; }
+}
+@media (min-width: 769px) {
+  .show-mobile { display: none !important; }
+}
+
+.spinner {
+  width: 28px; height: 28px;
+  border: 3px solid rgba(6,163,218,0.2);
+  border-top: 3px solid #06A3DA;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(6,163,218,0.3); border-radius: 3px; }
+
+/* Footer grid, matches the website's footer breakpoint */
+.pp-footer-top { }
+@media (max-width: 860px) {
+  .pp-footer-top { grid-template-columns: 1fr 1fr !important; }
+}
+
+/* ─── Mobile Responsive Enhancements ─── */
+@media (max-width: 600px) {
+  .mobile-stack { flex-direction: column !important; }
+  .mobile-full { width: 100% !important; }
+  .step-bar-label { display: none; }
+  .ben-actions { flex-wrap: wrap; gap: 6px !important; }
+  .nav-auth-row { flex-wrap: wrap; gap: 8px !important; }
+  .history-table { font-size: 12px !important; }
+  .history-table td { padding: 8px 8px !important; }
+}
+
+@media (max-width: 480px) {
+  .page-card { padding: 20px 16px !important; }
+  .amount-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}

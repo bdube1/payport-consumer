@@ -1,0 +1,460 @@
+import { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { transactionsApi } from '../lib/api';
+
+const C = {
+    green:  '#34AD54',
+    red:    '#ef4444',
+    blue:   '#06A3DA',
+    dark:   '#091E3E',
+    grey:   '#94b8ca',
+    bgGrey: '#EEF9FF',
+};
+
+const STATUS_MAP = {
+    INITIATED:           { stepIndex: 0, paymentFailed: false, fulfilmentFailed: false },
+    PAYMENT_PENDING:     { stepIndex: 1, paymentFailed: false, fulfilmentFailed: false },
+    // Not treated visually as "failed" -- a late provider callback can
+    // still confirm this payment (see PaymentTimeoutWatchdog on the
+    // backend), so an outright "failed" look here would be actively
+    // misleading while that's still a real possibility.
+    PAYMENT_TIMEOUT:     { stepIndex: 1, paymentFailed: false, fulfilmentFailed: false, stillChecking: true },
+    PAYMENT_FAILED:      { stepIndex: 1, paymentFailed: true,  fulfilmentFailed: false },
+    PAYMENT_CONFIRMED:   { stepIndex: 2, paymentFailed: false, fulfilmentFailed: false },
+    FULFILMENT_PENDING:  { stepIndex: 3, paymentFailed: false, fulfilmentFailed: false },
+    FULFILMENT_RETRY:    { stepIndex: 3, paymentFailed: false, fulfilmentFailed: false },
+    FULFILMENT_FAILED:   { stepIndex: 3, paymentFailed: false, fulfilmentFailed: true  },
+    MANUAL_FULFILMENT:   { stepIndex: 3, paymentFailed: false, fulfilmentFailed: true  },
+    COMPLETED:           { stepIndex: 4, paymentFailed: false, fulfilmentFailed: false },
+    REFUND_PENDING:      { stepIndex: 4, paymentFailed: false, fulfilmentFailed: false },
+    REFUNDED:            { stepIndex: 4, paymentFailed: false, fulfilmentFailed: false },
+};
+
+const STEPS = [
+    { label: 'Order Created',     icon: '📋' },
+    { label: 'Payment',           icon: '💳' },
+    { label: 'Payment Confirmed', icon: '✅' },
+    { label: 'Delivering',        icon: '⚙️' },
+    { label: 'Delivered',         icon: '🎉' },
+];
+
+// PAYMENT_TIMEOUT deliberately excluded -- a late provider callback can
+// still confirm the payment (see PaymentTimeoutWatchdog), so this isn't
+// actually final. Polling continues for a bounded extra window instead
+// of stopping immediately, handled separately below.
+const FINAL_STATUSES = [
+    'COMPLETED', 'PAYMENT_FAILED',
+    'FULFILMENT_FAILED', 'MANUAL_FULFILMENT', 'REFUNDED',
+];
+
+function getStepState(stepIdx, statusInfo, status) {
+    const { stepIndex, paymentFailed, fulfilmentFailed } = statusInfo;
+    if (stepIdx === 1 && paymentFailed)    return 'failed';
+    if (stepIdx === 3 && fulfilmentFailed) return 'failed';
+    if (status === 'COMPLETED')            return 'done';
+    if (stepIdx < stepIndex)               return 'done';
+    if (stepIdx === stepIndex)             return 'active';
+    return 'future';
+}
+
+function StepRow({ step, state, isLast }) {
+    const isDone   = state === 'done';
+    const isActive = state === 'active';
+    const isFailed = state === 'failed';
+    const isFuture = state === 'future';
+
+    const bubbleBg = isDone   ? C.green
+        : isFailed ? C.red
+            : isActive ? `linear-gradient(135deg, ${C.blue}, #0487b8)`
+                : C.bgGrey;
+
+    const labelColor = isDone   ? C.green
+        : isFailed ? C.red
+            : isActive ? C.blue
+                : C.grey;
+
+    const bubbleContent = isDone ? '✓' : isFailed ? '✕' : step.icon;
+    const bubbleColor   = (isDone || isFailed || isActive) ? 'white' : C.grey;
+
+    return (
+        <div style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '7px 0',
+            borderBottom: !isLast ? '1px solid rgba(6,163,218,0.07)' : 'none',
+        }}>
+            <div style={{
+                width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+                background: bubbleBg,
+                border: isFuture ? '2px solid rgba(6,163,218,0.15)' : 'none',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: (isDone || isFailed) ? 12 : 14,
+                fontWeight: 800,
+                color: bubbleColor,
+                boxShadow: isActive ? `0 4px 16px rgba(6,163,218,0.35)` : isDone ? `0 2px 8px rgba(52,173,84,0.2)` : isFailed ? `0 2px 8px rgba(239,68,68,0.2)` : 'none',
+                transition: 'all 0.4s ease',
+            }}>
+                {bubbleContent}
+            </div>
+
+            <div style={{ flex: 1, textAlign: 'left' }}>
+                <div style={{ fontWeight: 700, fontSize: 12.5, color: labelColor, transition: 'color 0.3s' }}>
+                    {step.label}
+                </div>
+                {isFailed && <div style={{ fontSize: 11, color: C.red, marginTop: 1 }}>Failed</div>}
+            </div>
+
+            {isActive && (
+                <div style={{ width: 16, height: 16, flexShrink: 0, border: '2px solid rgba(6,163,218,0.15)', borderTop: `2px solid ${C.blue}`, borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+            )}
+            {isDone && <div style={{ fontSize: 12, color: C.green, fontWeight: 700, flexShrink: 0 }}>✓</div>}
+            {isFailed && (
+                <div style={{ width: 16, height: 16, flexShrink: 0, borderRadius: '50%', background: 'rgba(239,68,68,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: C.red, fontWeight: 800 }}>✕</div>
+            )}
+        </div>
+    );
+}
+
+function btnStyle(variant) {
+    const base = { flex: 1, padding: '14px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', border: 'none' };
+    if (variant === 'primary') return { ...base, background: `linear-gradient(135deg, ${C.blue}, #0487b8)`, color: 'white', boxShadow: '0 4px 16px rgba(6,163,218,0.3)' };
+    if (variant === 'danger')  return { ...base, background: 'rgba(239,68,68,0.08)', color: '#b91c1c', border: '1.5px solid rgba(239,68,68,0.2)' };
+    return { ...base, background: '#f4f8fb', color: '#5a7a8a', border: '1.5px solid rgba(6,163,218,0.15)' };
+}
+
+// Helper to get payment method display name
+const getPaymentMethodName = (code) => {
+    const methods = {
+        'ECOCASH': 'EcoCash',
+        'ONEMONEY': 'OneMoney',
+        'ZIMSWITCH': 'ZimSwitch',
+        'VISA': 'Visa',
+        'MASTERCARD': 'Mastercard',
+        'TELECASH': 'Telecash'
+    };
+    return methods[code] || code;
+};
+
+// Helper to extract just the EcoCash reference number
+const getEcoCashReference = (transaction) => {
+    if (!transaction) return null;
+
+    // Direct ecocashReference field that looks like MP...
+    if (transaction.ecocashReference &&
+        typeof transaction.ecocashReference === 'string' &&
+        transaction.ecocashReference.startsWith('MP')) {
+        return transaction.ecocashReference;
+    }
+
+    return null;
+};
+
+export default function Processing() {
+    const { ref } = useParams();
+    const navigate = useNavigate();
+    const [transaction, setTransaction] = useState(null);
+    const [fetchError, setFetchError]   = useState('');
+    const [dots, setDots]               = useState('');
+    const [otpValue, setOtpValue]       = useState('');
+    const [otpSubmitting, setOtpSubmitting] = useState(false);
+    const [otpError, setOtpError]       = useState('');
+    const intervalRef = useRef(null);
+    const dotsRef     = useRef(null);
+    // Set the moment PAYMENT_TIMEOUT is first seen -- polling keeps
+    // going for a bounded window after that (a late callback can still
+    // confirm the payment) rather than either stopping immediately
+    // (missing a real late confirmation) or polling forever (a
+    // genuinely abandoned transaction that will never resolve).
+    const timeoutSeenAtRef = useRef(null);
+    const EXTRA_POLL_WINDOW_MS = 90000;
+
+    const poll = async () => {
+        try {
+            const r  = await transactionsApi.getStatus(ref);
+            const tx = r.data?.data || r.data;
+            setTransaction(tx);
+
+            if (tx && tx.status === 'PAYMENT_TIMEOUT' && !timeoutSeenAtRef.current) {
+                timeoutSeenAtRef.current = Date.now();
+            }
+
+            const timedOutTooLong = timeoutSeenAtRef.current
+                && (Date.now() - timeoutSeenAtRef.current) > EXTRA_POLL_WINDOW_MS;
+
+            if (tx && (FINAL_STATUSES.includes(tx.status) || timedOutTooLong)) {
+                clearInterval(intervalRef.current);
+                clearInterval(dotsRef.current);
+            }
+        } catch (e) {
+            setFetchError(e.response?.data?.message || 'Unable to get status');
+        }
+    };
+
+    const handleOtpSubmit = async (e) => {
+        e.preventDefault();
+        if (!otpValue.trim()) return;
+        setOtpError('');
+        setOtpSubmitting(true);
+        try {
+            await transactionsApi.confirmOmariOtp(ref, otpValue.trim());
+            setOtpValue('');
+            // Refreshes immediately rather than waiting up to 3s for the
+            // next scheduled poll -- the customer just took an action,
+            // the screen should react to it right away.
+            await poll();
+        } catch (e) {
+            // Clears here too, not just on success -- Omari allows up to
+            // 3 attempts, and leaving the wrong code sitting in the field
+            // invites resubmitting the exact same wrong value, burning an
+            // attempt without the customer realising they need to type a
+            // fresh one.
+            setOtpValue('');
+            setOtpError(e.response?.data?.message || 'Could not confirm that code — please check it and try again.');
+        } finally {
+            setOtpSubmitting(false);
+        }
+    };
+
+    useEffect(() => {
+        poll();
+        // 1.5s, not 3s -- speed matters here specifically: the customer
+        // is staring at this screen waiting to see their payment
+        // confirmed, and every second of polling lag is a second of
+        // perceived slowness on top of however long the backend itself
+        // actually took to resolve it.
+        intervalRef.current = setInterval(poll, 1500);
+        dotsRef.current     = setInterval(() => setDots(d => d.length >= 3 ? '' : d + '.'), 500);
+        return () => { clearInterval(intervalRef.current); clearInterval(dotsRef.current); };
+    }, [ref]);
+
+    // Show loading while fetching
+    if (!transaction && !fetchError) {
+        return (
+            <div style={{ minHeight: '100vh', background: C.bgGrey, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ textAlign: 'center' }}>
+                    <div style={{ width: 48, height: 48, border: '3px solid rgba(6,163,218,0.1)', borderTop: `3px solid ${C.blue}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
+                    <p style={{ color: C.dark }}>Loading transaction...</p>
+                </div>
+            </div>
+        );
+    }
+
+    const status     = transaction?.status || 'INITIATED';
+    const statusInfo = STATUS_MAP[status] || STATUS_MAP['INITIATED'];
+
+    const isComplete      = status === 'COMPLETED';
+    const isPaymentFailed = statusInfo.paymentFailed;
+    const isFulfilFailed  = statusInfo.fulfilmentFailed;
+    const isFailed        = isPaymentFailed || isFulfilFailed;
+    const isRefunded      = status === 'REFUNDED';
+    const isPending       = !isComplete && !isFailed && !isRefunded;
+    const isStillChecking = status === 'PAYMENT_TIMEOUT';
+    const isCardPayment   = ['ZIMSWITCH','VISA','MASTERCARD'].includes(transaction?.paymentMethodCode);
+
+    const paymentMethodName = getPaymentMethodName(transaction?.paymentMethodCode);
+    const ecoCashReference = getEcoCashReference(transaction);
+    const amount = transaction?.amount ||
+        (transaction?.amountCents ? (transaction.amountCents / 100).toFixed(2) : '0.00');
+
+    const topIcon = isComplete ? '🎉' : isFailed ? '✕' : isRefunded ? '↩' : '⏳';
+    const topBg   = isComplete ? `linear-gradient(135deg, ${C.green}, #2a8f45)`
+        : isFailed   ? `linear-gradient(135deg, ${C.red}, #b91c1c)`
+            : isRefunded ? `linear-gradient(135deg, #8b5cf6, #6d28d9)`
+                : `linear-gradient(135deg, ${C.blue}, #0487b8)`;
+
+    const headline = isComplete      ? `${transaction?.productName || 'Order'} Delivered! 🎉`
+        : isPaymentFailed ? `Processing ${paymentMethodName} Payment Failed`
+            : isFulfilFailed  ? `Processing ${transaction?.productName || 'Order'} Failed`
+                : isRefunded      ? 'Refunded'
+                    : `Processing${dots}`;
+
+    // No subtitle for payment failed since we have the message at the bottom
+    const subtitle = isComplete      ? 'Your airtime has been sent successfully.'
+        : isPaymentFailed ? ''
+            : isFulfilFailed  ? `Your ${transaction?.productName || 'order'} could not be processed. Our team is on it — you will not be charged.`
+                : isRefunded      ? 'Your payment has been refunded.'
+                    : isStillChecking ? 'This is taking a bit longer than usual — still checking with your provider.'
+                        : 'Hang tight — this usually takes under 30 seconds.';
+
+    const handleTryAgain = () => navigate('/');
+
+    return (
+        <div style={{ minHeight: '100vh', background: C.bgGrey, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+            <div style={{ maxWidth: 460, width: '100%' }}>
+                <div style={{ background: 'white', borderRadius: 22, padding: '26px 26px', border: '1.5px solid rgba(6,163,218,0.1)', boxShadow: '0 8px 48px rgba(6,163,218,0.1)', textAlign: 'center' }}>
+
+                    {/* Top icon */}
+                    <div style={{
+                        width: 56, height: 56, borderRadius: '50%', margin: '0 auto 14px',
+                        background: topBg,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: isFailed ? 22 : 26, fontWeight: 900, color: 'white',
+                        boxShadow: isComplete ? '0 8px 32px rgba(52,173,84,0.35)' : isFailed ? '0 8px 32px rgba(239,68,68,0.35)' : '0 8px 32px rgba(6,163,218,0.3)',
+                        animation: isPending ? 'pulse 2s infinite' : 'none',
+                    }}>
+                        {topIcon}
+                    </div>
+
+                    {/* Headline */}
+                    <h1 style={{ fontSize: 18, fontWeight: 800, color: isFailed ? C.red : C.dark, marginBottom: 4, letterSpacing: '-0.02em' }}>
+                        {headline}
+                    </h1>
+
+                    {/* Subtitle - empty for payment failed */}
+                    {subtitle && (
+                        <p style={{ fontSize: 12.5, lineHeight: 1.5, marginBottom: 6, color: isFailed ? '#b91c1c' : '#5a7a8a', fontWeight: isFailed ? 600 : 400 }}>
+                            {subtitle}
+                        </p>
+                    )}
+
+                    {/* Reference pill with "Ref:" prefix */}
+                    <div style={{ display: 'inline-block', padding: '3px 12px', background: 'rgba(6,163,218,0.08)', borderRadius: 100, fontSize: 11, color: C.blue, fontWeight: 600, marginBottom: ecoCashReference ? 10 : 16, fontFamily: 'monospace' }}>
+                        Ref: {ref}
+                    </div>
+
+                    {/* EcoCash Reference - ONLY show if we have a valid MP reference */}
+                    {ecoCashReference && (
+                        <div style={{
+                            display: 'inline-block',
+                            padding: '3px 12px',
+                            background: 'rgba(52,173,84,0.08)',
+                            borderRadius: 100,
+                            fontSize: 11,
+                            color: C.green,
+                            fontWeight: 600,
+                            marginBottom: 16,
+                            fontFamily: 'monospace',
+                            border: '1px solid rgba(52,173,84,0.2)',
+                            marginLeft: '8px'
+                        }}>
+                            {paymentMethodName} Ref: {ecoCashReference}
+                        </div>
+                    )}
+
+                    {/* Step tracker */}
+                    <div style={{ marginBottom: 14, textAlign: 'left' }}>
+                        {STEPS.map((step, idx) => (
+                            <StepRow
+                                key={step.label}
+                                step={step}
+                                state={getStepState(idx, statusInfo, status)}
+                                isLast={idx === STEPS.length - 1}
+                            />
+                        ))}
+                    </div>
+
+                    {/* Omari OTP entry -- takes priority over the normal pending hint */}
+                    {transaction?.requiresOtpEntry && (
+                        <form onSubmit={handleOtpSubmit} style={{ background: 'rgba(6,163,218,0.05)', borderRadius: 12, padding: '14px', marginBottom: 14, border: '1.5px solid rgba(6,163,218,0.15)', textAlign: 'left' }}>
+                            <p style={{ fontSize: 12.5, color: C.dark, lineHeight: 1.4, margin: '0 0 10px', fontWeight: 600 }}>
+                                📲 Enter the code sent to your mobile number to authorise this payment.
+                            </p>
+                            {otpError && (
+                                <p style={{ fontSize: 12, color: C.red, margin: '0 0 8px' }}>⚠️ {otpError}</p>
+                            )}
+                            <div style={{ display: 'flex', gap: 8 }}>
+                                <input
+                                    type="text" inputMode="numeric" value={otpValue}
+                                    onChange={e => setOtpValue(e.target.value)}
+                                    placeholder="Enter code" autoFocus
+                                    style={{ flex: 1, padding: '10px 12px', borderRadius: 8, border: '1.5px solid rgba(6,163,218,0.2)', fontSize: 14, fontFamily: 'monospace', letterSpacing: '0.05em' }}
+                                />
+                                <button
+                                    type="submit" disabled={otpSubmitting || !otpValue.trim()}
+                                    style={{ padding: '10px 18px', borderRadius: 8, border: 'none', background: C.blue, color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', opacity: otpSubmitting ? 0.6 : 1 }}
+                                >
+                                    {otpSubmitting ? 'Checking…' : 'Confirm'}
+                                </button>
+                            </div>
+                        </form>
+                    )}
+
+                    {/* Pending hint */}
+                    {isPending && !transaction?.requiresOtpEntry && (
+                        <div style={{ background: 'rgba(6,163,218,0.05)', borderRadius: 12, padding: '10px 14px', marginBottom: 14, border: '1.5px solid rgba(6,163,218,0.1)', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div style={{ fontSize: 16, flexShrink: 0 }}>{isStillChecking ? '⏳' : isCardPayment ? '💳' : '📱'}</div>
+                            <p style={{ fontSize: 12.5, color: '#5a7a8a', lineHeight: 1.4, margin: 0 }}>
+                                {isStillChecking
+                                    ? "If you've already approved this on your phone, no need to do anything else — we're still confirming it with your provider."
+                                    : isCardPayment
+                                        ? 'Your card payment is being confirmed. This page updates automatically.'
+                                        : <><strong>Check your phone</strong> for a payment prompt. This page updates automatically.</>
+                                }
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Payment failed detail */}
+                    {isPaymentFailed && (
+                        <div style={{ background: 'rgba(239,68,68,0.05)', borderRadius: 12, padding: '10px 14px', marginBottom: 14, border: '1.5px solid rgba(239,68,68,0.15)', textAlign: 'left' }}>
+                            <p style={{ fontSize: 12.5, color: '#b91c1c', lineHeight: 1.4, margin: 0 }}>
+                                {/* Was always this exact hardcoded generic
+                                    text regardless of what actually went
+                                    wrong -- the backend already stores a
+                                    specific, translated failure reason
+                                    (transaction.failureReason) but this
+                                    screen never looked at it. A customer
+                                    hitting a real, specific problem (limit
+                                    exceeded, wrong PIN, etc.) always saw
+                                    "was not completed" with no indication
+                                    of why or what to do differently. */}
+                                ⚠️ {transaction?.failureReason || `Your ${paymentMethodName} payment of $${amount} was not completed. No money was deducted.`}
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Fulfilment failed detail */}
+                    {isFulfilFailed && (
+                        <div style={{ background: 'rgba(239,68,68,0.05)', borderRadius: 12, padding: '10px 14px', marginBottom: 14, border: '1.5px solid rgba(239,68,68,0.15)', textAlign: 'left' }}>
+                            <p style={{ fontSize: 12.5, color: '#b91c1c', lineHeight: 1.4, margin: 0 }}>
+                                {/* Same fix as the payment-failed block above --
+                                    was always this exact generic text regardless
+                                    of the actual reason, even when the backend
+                                    had a specific one (e.g. Econet's own status
+                                    codes, properly translated). */}
+                                ⚠️ Payment of <strong>${amount}</strong> received.
+                                {transaction?.failureReason ? ` ${transaction.failureReason} ` : ' '}
+                                Delivery is being retried — ref <strong>{ref}</strong>.
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Action buttons */}
+                    {isComplete && (
+                        <div style={{ display: 'flex', gap: 10 }}>
+                            <button onClick={() => navigate('/')} style={btnStyle('secondary')}>Home</button>
+                            <button onClick={() => navigate(`/status/${ref}`)} style={btnStyle('primary')}>View Receipt</button>
+                        </div>
+                    )}
+
+                    {isPaymentFailed && (
+                        <div style={{ display: 'flex', gap: 10 }}>
+                            <button onClick={handleTryAgain} style={btnStyle('secondary')}>← Try Again</button>
+                            <button onClick={() => navigate('/help')} style={btnStyle('danger')}>Get Help</button>
+                        </div>
+                    )}
+
+                    {isFulfilFailed && (
+                        <div style={{ display: 'flex', gap: 10 }}>
+                            <button onClick={() => navigate('/')} style={btnStyle('secondary')}>Home</button>
+                            <button onClick={() => navigate('/help')} style={btnStyle('danger')}>Contact Support</button>
+                        </div>
+                    )}
+
+                    {isRefunded && (
+                        <div style={{ display: 'flex', gap: 10 }}>
+                            <button onClick={() => navigate('/')} style={btnStyle('secondary')}>Home</button>
+                            <button onClick={handleTryAgain} style={btnStyle('primary')}>Try Again</button>
+                        </div>
+                    )}
+
+                    {fetchError && <p style={{ fontSize: 12, color: C.red, marginTop: 10 }}>⚠️ {fetchError}</p>}
+                </div>
+            </div>
+
+            <style>{`
+        @keyframes pulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.03);opacity:0.92} }
+        @keyframes spin  { to{transform:rotate(360deg)} }
+      `}</style>
+        </div>
+    );
+}
