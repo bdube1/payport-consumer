@@ -10,6 +10,13 @@ const STATUS_COLORS = {
     FULFILMENT_FAILED: { bg: 'rgba(229,62,62,0.15)', color: '#e53e3e', label: 'Fulfilment Failed' },
     FULFILMENT_PENDING: { bg: 'rgba(6,163,218,0.15)', color: '#06A3DA', label: 'Processing' },
     INITIATED: { bg: 'rgba(107,114,128,0.15)', color: '#6b7280', label: 'Initiated' },
+    PAYMENT_TIMEOUT: { bg: 'rgba(107,114,128,0.15)', color: '#6b7280', label: 'Timed Out' },
+    PAYMENT_CONFIRMED: { bg: 'rgba(6,163,218,0.15)', color: '#06A3DA', label: 'Processing' },
+    FULFILMENT_RETRY: { bg: 'rgba(6,163,218,0.15)', color: '#06A3DA', label: 'Processing' },
+    MANUAL_FULFILMENT: { bg: 'rgba(217,119,6,0.15)', color: '#d97706', label: 'Being Checked' },
+    REFUND_PENDING: { bg: 'rgba(6,182,212,0.15)', color: '#06b6d4', label: 'Refund Pending' },
+    REFUNDED: { bg: 'rgba(6,182,212,0.15)', color: '#06b6d4', label: 'Refunded' },
+    CANCELLED: { bg: 'rgba(107,114,128,0.15)', color: '#6b7280', label: 'Cancelled' },
 };
 
 function fmtDate(val) {

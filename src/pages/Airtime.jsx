@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { productsApi, transactionsApi, normalizePhone, formatAmount, generateReference } from '../lib/api';
+import { productsApi, startPayment, paymentError, normalizePhone, formatAmount, generateReference } from '../lib/api';
 import { useAuth } from '../lib/AuthContext';
 import FlowSection from '../components/flow/FlowSection';
 import ConfirmModal from '../components/flow/ConfirmModal';
@@ -190,7 +190,7 @@ export default function Airtime() {
         const ref = generateReference('WEB');
         const payPhone = normalizePhone(paymentIdentifier);
         try {
-            await transactionsApi.initiate({
+            await startPayment({
                 reference: ref,
                 productTypeCode: productCode,
                 recipientIdentifier: finalRecipient,
@@ -198,16 +198,15 @@ export default function Airtime() {
                 currency: selectedCurrency || 'USD',
                 customerPhone: payPhone,
                 channel: 'WEB',
-            });
-            await transactionsApi.pay({
-                reference: ref,
+            }, {
                 paymentMethodCode: paymentMethod,
                 customerPhone: payPhone,
             });
             navigate(`/processing/${ref}`);
         } catch (e) {
             setConfirmOpen(false);
-            setError(e.response?.data?.message || e.message || 'Transaction failed. Please try again.');
+            const pe = paymentError(e, 'Transaction failed. Please try again.');
+            setError(pe.providerUnavailable ? `${pe.message} You can choose another payment method below.` : pe.message);
             setLoading(false);
         }
     };

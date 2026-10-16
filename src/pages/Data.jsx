@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { productsApi, transactionsApi, normalizePhone, generateReference, formatAmount, BASE } from '../lib/api';
+import { productsApi, startPayment, paymentError, normalizePhone, generateReference, formatAmount, BASE } from '../lib/api';
 import FlowSection from '../components/flow/FlowSection';
 import ConfirmModal from '../components/flow/ConfirmModal';
 
@@ -177,15 +177,15 @@ export default function Data() {
         const recipient = normalizePhone(recipientPhone);
         const payIdentifier = normalizePhone(paymentIdentifier);
         try {
-            await transactionsApi.initiate({
+            await startPayment({
                 reference: ref, productTypeCode: `DATA_${network}`, recipientIdentifier: recipient,
                 amountCents: bundle.amountCents, currency: selectedCurrency, customerPhone: payIdentifier, channel: 'WEB',
-            });
-            await transactionsApi.pay({ reference: ref, paymentMethodCode: paymentMethod, customerPhone: payIdentifier });
+            }, { paymentMethodCode: paymentMethod, customerPhone: payIdentifier });
             navigate(`/processing/${ref}`);
         } catch (e) {
             setConfirmOpen(false);
-            setError(e.response?.data?.message || 'Transaction failed'); setLoading(false);
+            const pe = paymentError(e, 'Transaction failed');
+            setError(pe.providerUnavailable ? `${pe.message} You can choose another payment method below.` : pe.message); setLoading(false);
         }
     };
 

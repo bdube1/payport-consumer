@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { productsApi, transactionsApi, billsApi, normalizePhone, generateReference, formatAmount, BASE } from '../lib/api';
+import { productsApi, billersApi, startPayment, paymentError, normalizePhone, generateReference, formatAmount, BASE } from '../lib/api';
 import { getFallbackIcon, getBillerColor, getFieldName, getMerchantCode } from '../lib/billers';
 import FlowSection from '../components/flow/FlowSection';
 import ConfirmModal from '../components/flow/ConfirmModal';
@@ -44,6 +44,7 @@ export default function Bills() {
     const [selectedMonths, setSelectedMonths] = useState(1);
     const [zesaInfo, setZesaInfo] = useState(null);
     const [cacheBuster] = useState(Date.now());
+    const [catalogue, setCatalogue] = useState({});
 
     useEffect(() => {
         const fetchData = async () => {
@@ -74,6 +75,13 @@ export default function Bills() {
                         if (location.state.accountRef) setAccount(location.state.accountRef);
                     }
                 }
+
+                try {
+                    const cat = await billersApi.catalogue();
+                    const byCode = {};
+                    (cat.data?.data || []).forEach(p => { byCode[p.code] = p; });
+                    setCatalogue(byCode);
+                } catch { /* lookup still works without the catalogue */ }
 
                 const methodsRes = await productsApi.getPaymentMethods();
                 const methods = (methodsRes.data.data || methodsRes.data || []).filter(pm => pm.isActive === true).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
@@ -127,48 +135,59 @@ export default function Bills() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [amount, selectedCurrency, minAmount, maxAmount]);
 
-    // Account verification — now via billsApi (shared, authenticated client)
-    // instead of a raw axios call to a hardcoded localhost URL, which meant
-    // this simply couldn't work outside of local development before.
+    // Account verification: the biller catalogue's format check first (no network call for an
+    // obviously wrong number), then the biller lookup. The server applies the same rules again
+    // at /initiate, before the customer pays.
+    const resetAccount = () => { setAccountName(''); setNyaradzoInfo(null); setZesaInfo(null); };
+
     const validateAccount = async (currencyToUse) => {
         if (!biller || !account || account.length < 5) {
-            setAccountName(''); setNyaradzoInfo(null); setZesaInfo(null); setError(''); return;
+            resetAccount(); setError(''); return;
+        }
+        const profile = catalogue[biller.code];
+        const acct = account.trim().replace(/\s+/g, '');
+        if (profile?.accountPattern) {
+            let ok = true;
+            try { ok = new RegExp(profile.accountPattern).test(acct); } catch { ok = true; }
+            if (!ok) {
+                resetAccount();
+                setError(profile.accountHint || `Please check the ${profile.accountLabel || 'account number'}.`);
+                return;
+            }
         }
         setValidatingAccount(true); setError('');
         try {
-            const response = await billsApi.getCustomerInfo(biller.code, account, currencyToUse);
-            if (response.data.success && response.data.data) {
-                const customerData = response.data.data;
-                if (biller.code === 'NYARADZO') {
-                    setNyaradzoInfo(customerData); setZesaInfo(null);
-                    setAccountName(customerData.holderName || '');
-                    const currency = customerData.currency || 'USD';
-                    setSelectedCurrency(currency); setAvailableCurrencies([currency]); setError('');
-                } else if (biller.code === 'ZESA') {
-                    setZesaInfo(customerData); setNyaradzoInfo(null);
-                    setAccountName(customerData.customerName || '');
-                    setAvailableCurrencies(['USD', 'ZWG']);
-                    if (!['USD', 'ZWG'].includes(selectedCurrency)) setSelectedCurrency('USD');
-                    setError('');
-                } else if (customerData.customerName) {
-                    setNyaradzoInfo(null); setZesaInfo(null);
-                    setAccountName(customerData.customerName);
-                    const product = products.find(p => p.code === biller.productCode);
-                    const active = product?.enabledCurrencies?.filter(c => c.isActive !== false).map(c => c.currency) || [];
-                    setAvailableCurrencies(active.length > 0 ? active : ['USD', 'ZWG']);
-                    if (!active.includes(selectedCurrency)) setSelectedCurrency(active[0] || 'USD');
-                    setError('');
-                } else {
-                    setAccountName(''); setNyaradzoInfo(null); setZesaInfo(null);
-                    setError('Account validated but no name returned');
-                }
-            } else {
-                setAccountName(''); setNyaradzoInfo(null); setZesaInfo(null);
-                setError(response.data.error?.message || response.data.message || 'Account validation failed');
+            const r = await billersApi.lookup(biller.code, acct, currencyToUse || undefined, undefined);
+            const a = r.data?.data || {};
+            if (!a.payable) {
+                resetAccount();
+                setError(a.notPayableReason || 'This account cannot be paid right now.');
+                return;
             }
+            const d = a.details || {};
+            const accepted = (a.acceptedCurrencies && a.acceptedCurrencies.length) ? a.acceptedCurrencies : [a.currency || 'USD'];
+            if (biller.code === 'NYARADZO') {
+                const ccy = a.currency || accepted[0];
+                const status = d.policyStatus || '';
+                setNyaradzoInfo({
+                    holderName: a.holderName, currency: ccy, policyStatus: status,
+                    isPolicyActive: !/laps|inactive|cancel/i.test(status),
+                    balanceCents: Number(d.balanceMinor || 0), monthlyPremiumCents: Number(d.monthlyPremiumMinor || 0),
+                });
+                setZesaInfo(null);
+                setAccountName(a.holderName || '');
+                setSelectedCurrency(ccy); setAvailableCurrencies([ccy]);
+            } else {
+                setNyaradzoInfo(null);
+                setZesaInfo(biller.code === 'ZESA' ? { meterNumber: a.accountNumber || acct, customerName: a.holderName, ...d } : null);
+                setAccountName(a.holderName || '');
+                setAvailableCurrencies(accepted);
+                if (!accepted.includes(selectedCurrency)) setSelectedCurrency(accepted[0]);
+            }
+            if (!a.holderName) setError('Account found, but no name was returned. Check the number before paying.');
         } catch (err) {
-            setAccountName(''); setNyaradzoInfo(null); setZesaInfo(null);
-            setError(err.response?.data?.error?.message || err.response?.data?.message || err.message || 'Unable to validate account');
+            resetAccount();
+            setError(err.response?.data?.message || 'Unable to validate account');
         } finally { setValidatingAccount(false); }
     };
 
@@ -217,7 +236,7 @@ export default function Bills() {
         const payPhone = normalizePhone(phone);
         const amtCents = Math.round(totalAmount * 100);
         try {
-            await transactionsApi.initiate({
+            await startPayment({
                 reference: ref, productTypeCode: biller.productCode, recipientIdentifier: account,
                 amountCents: amtCents, currency: totalCurrency, customerPhone: payPhone, channel: 'WEB',
                 ...(isNyaradzo && nyaradzoInfo && {
@@ -227,12 +246,12 @@ export default function Bills() {
                         currency: nyaradzoInfo.currency || totalCurrency, sourcePhone: payPhone,
                     },
                 }),
-            });
-            await transactionsApi.pay({ reference: ref, paymentMethodCode: paymentMethod, customerPhone: payPhone });
+            }, { paymentMethodCode: paymentMethod, customerPhone: payPhone });
             navigate(`/processing/${ref}`);
         } catch (e) {
             setConfirmOpen(false);
-            setError(e.response?.data?.message || e.response?.data?.error?.message || 'Payment failed');
+            const pe = paymentError(e, 'Payment failed');
+            setError(pe.providerUnavailable ? `${pe.message} You can choose another payment method below.` : pe.message);
             setLoading(false);
         }
     };
@@ -306,7 +325,7 @@ export default function Bills() {
                     summary={accountVerified ? `${account} · ${accountName}` : ''}
                 >
                     <input
-                        value={account} onChange={e => setAccount(e.target.value)} placeholder={`Enter ${biller?.field}`}
+                        value={account} onChange={e => setAccount(e.target.value)} placeholder={catalogue[biller?.code]?.accountHint || `Enter ${biller?.field}`}
                         style={{ width: '100%', padding: '14px 18px', border: '2px solid rgba(6,163,218,0.2)', borderRadius: 12, fontSize: 15, outline: 'none', background: '#EEF9FF', marginBottom: 8 }}
                     />
                     {validatingAccount && <p style={{ fontSize: 12.5, color: '#5a7a8a' }}>Verifying account...</p>}
