@@ -106,7 +106,9 @@ export function paymentError(err, fallback = 'Payment could not be started. Plea
     return {
         message: message || fallback,
         code,
-        providerUnavailable: status === 503 || code === 'PROVIDER_UNAVAILABLE',
+        // 503 CHANNEL_UNAVAILABLE: payments through this app are paused (switched off in the portal).
+        channelUnavailable: code === 'CHANNEL_UNAVAILABLE',
+        providerUnavailable: code === 'PROVIDER_UNAVAILABLE' || (status === 503 && code !== 'CHANNEL_UNAVAILABLE'),
         notAllowed: status === 403 || code === 'PAYMENT_NOT_ALLOWED',
     };
 }
