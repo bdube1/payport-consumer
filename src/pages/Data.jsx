@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { productsApi, startPayment, paymentError, normalizePhone, generateReference, formatAmount, BASE } from '../lib/api';
+import { productsApi, startPayment, paymentError, normalizePhone, generateReference, formatAmount, BASE, visibleMethods } from '../lib/api';
+import WalletPin from '../components/flow/WalletPin';
 import FlowSection from '../components/flow/FlowSection';
 import ConfirmModal from '../components/flow/ConfirmModal';
 
@@ -42,6 +43,7 @@ export default function Data() {
     const [selectedCurrency, setSelectedCurrency] = useState('');
     const [productsData, setProductsData] = useState([]);
     const [paymentMethods, setPaymentMethods] = useState([]);
+    const [walletPin, setWalletPin] = useState('');
     const [isValidRecipient, setIsValidRecipient] = useState(false);
     const [logoError, setLogoError] = useState({});
     const [cacheBuster] = useState(Date.now());
@@ -75,7 +77,7 @@ export default function Data() {
         fetchProducts();
 
         productsApi.getPaymentMethods().then(r => {
-            const methods = (r.data.data || r.data || []).filter(pm => pm.isActive === true).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+            const methods = visibleMethods(r.data.data || r.data || []).filter(pm => pm.isActive === true).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
             setPaymentMethods(methods.length > 0 ? methods : PAYMENT_METHODS);
             if (methods.length > 0) setPaymentMethod(methods[0].code);
         }).catch(() => setPaymentMethods(PAYMENT_METHODS));
@@ -168,7 +170,7 @@ export default function Data() {
     const getPaymentFieldLabel = () => MOBILE_MONEY.includes(paymentMethod) ? 'Payment wallet number' : 'Cardholder mobile number';
     const getPaymentFieldPlaceholder = () => MOBILE_MONEY.includes(paymentMethod) ? 'Wallet number for USSD prompt' : 'Mobile number for verification';
 
-    const canPay = isValidRecipient && !!bundle && !!paymentMethod && normalizePhone(paymentIdentifier).length >= 12;
+    const canPay = isValidRecipient && !!bundle && !!paymentMethod && normalizePhone(paymentIdentifier).length >= 12 && (paymentMethod !== 'WALLET' || walletPin.length >= 4);
 
     const handlePay = async () => {
         if (!canPay) return;
@@ -180,7 +182,7 @@ export default function Data() {
             await startPayment({
                 reference: ref, productTypeCode: `DATA_${network}`, recipientIdentifier: recipient,
                 amountCents: bundle.amountCents, currency: selectedCurrency, customerPhone: payIdentifier, channel: 'WEB',
-            }, { paymentMethodCode: paymentMethod, customerPhone: payIdentifier });
+            }, { paymentMethodCode: paymentMethod, customerPhone: payIdentifier, pin: walletPin });
             navigate(`/processing/${ref}`);
         } catch (e) {
             setConfirmOpen(false);
@@ -308,6 +310,7 @@ export default function Data() {
                         <div style={{ padding: '14px 16px', background: 'linear-gradient(135deg, #06A3DA, #0487b8)', color: 'white', fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>🇿🇼 +263</div>
                         <input value={paymentIdentifier} onChange={e => { setPaymentIdentifierTouched(true); setPaymentIdentifier(e.target.value); }} placeholder={getPaymentFieldPlaceholder()} style={{ flex: 1, padding: '14px 16px', border: 'none', background: 'transparent', fontSize: 15, outline: 'none' }} />
                     </div>
+                    {paymentMethod === 'WALLET' && <WalletPin value={walletPin} onChange={setWalletPin} />}
                 </FlowSection>
 
                 {/* In-flow Confirm and Pay button — not a floating footer */}

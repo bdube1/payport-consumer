@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { productsApi, startPayment, paymentError, normalizePhone, formatAmount, generateReference } from '../lib/api';
+import { productsApi, startPayment, paymentError, normalizePhone, formatAmount, generateReference, visibleMethods } from '../lib/api';
+import WalletPin from '../components/flow/WalletPin';
 import { useAuth } from '../lib/AuthContext';
 import FlowSection from '../components/flow/FlowSection';
 import ConfirmModal from '../components/flow/ConfirmModal';
@@ -82,6 +83,7 @@ export default function Airtime() {
     const [paymentMethod, setPaymentMethod] = useState(quickPayMethod || '');
     const [paymentIdentifier, setPaymentIdentifier] = useState('');
     const [paymentMethods, setPaymentMethods] = useState([]);
+    const [walletPin, setWalletPin] = useState('');
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -100,7 +102,7 @@ export default function Airtime() {
         }).catch(() => {});
 
         productsApi.getPaymentMethods().then(r => {
-            const methods = (r.data.data || r.data || [])
+            const methods = visibleMethods(r.data.data || r.data || [])
                 .filter(pm => pm.isActive === true)
                 .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
             setPaymentMethods(methods);
@@ -182,7 +184,7 @@ export default function Airtime() {
     const networkReady = phoneReady && network && isProductActive && !networkLoading;
     const currencyReady = networkReady && !!selectedCurrency;
     const amountReady = currencyReady && !!getFinalAmount() && getFinalAmount() >= minCents && getFinalAmount() <= maxCents;
-    const canPay = amountReady && !!paymentMethod && normalizePhone(paymentIdentifier).length >= 12;
+    const canPay = amountReady && !!paymentMethod && normalizePhone(paymentIdentifier).length >= 12 && (paymentMethod !== 'WALLET' || walletPin.length >= 4);
 
     const handleSubmit = async () => {
         setError(''); setLoading(true);
@@ -201,6 +203,7 @@ export default function Airtime() {
             }, {
                 paymentMethodCode: paymentMethod,
                 customerPhone: payPhone,
+                pin: walletPin,
             });
             navigate(`/processing/${ref}`);
         } catch (e) {
@@ -315,6 +318,7 @@ export default function Airtime() {
                             placeholder={getPaymentFieldPlaceholder()}
                         />
                     </Field>
+                    {paymentMethod === 'WALLET' && <WalletPin value={walletPin} onChange={setWalletPin} />}
                 </FlowSection>
 
                 {/* In-flow Confirm and Pay button — not a floating footer */}

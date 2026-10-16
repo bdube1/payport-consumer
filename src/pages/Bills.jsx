@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { productsApi, billersApi, startPayment, paymentError, normalizePhone, generateReference, formatAmount, BASE } from '../lib/api';
+import { productsApi, billersApi, startPayment, paymentError, normalizePhone, generateReference, formatAmount, BASE, visibleMethods } from '../lib/api';
+import WalletPin from '../components/flow/WalletPin';
 import { getFallbackIcon, getBillerColor, getFieldName, getMerchantCode } from '../lib/billers';
 import FlowSection from '../components/flow/FlowSection';
 import ConfirmModal from '../components/flow/ConfirmModal';
@@ -33,6 +34,7 @@ export default function Bills() {
     const [availableCurrencies, setAvailableCurrencies] = useState(['USD']);
     const [selectedCurrency, setSelectedCurrency] = useState('USD');
     const [paymentMethods, setPaymentMethods] = useState([]);
+    const [walletPin, setWalletPin] = useState('');
 
     const [products, setProducts] = useState([]);
     const [minAmount, setMinAmount] = useState(1);
@@ -84,7 +86,7 @@ export default function Bills() {
                 } catch { /* lookup still works without the catalogue */ }
 
                 const methodsRes = await productsApi.getPaymentMethods();
-                const methods = (methodsRes.data.data || methodsRes.data || []).filter(pm => pm.isActive === true).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+                const methods = visibleMethods(methodsRes.data.data || methodsRes.data || []).filter(pm => pm.isActive === true).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
                 setPaymentMethods(methods.length > 0 ? methods : PAYMENT_METHODS);
                 if (methods.length > 0) setPaymentMethod(methods[0].code);
             } catch (err) { console.error('Failed to load billers:', err); }
@@ -225,7 +227,7 @@ export default function Bills() {
     const isNyaradzo = biller?.code === 'NYARADZO';
     const accountVerified = !!accountName && !validatingAccount && !error;
     const amountReady = isNyaradzo ? !!nyaradzoInfo : (!!amount && !amountError && parseFloat(amount) > 0);
-    const canPay = accountVerified && amountReady && !!paymentMethod && normalizePhone(phone).length >= 12;
+    const canPay = accountVerified && amountReady && !!paymentMethod && normalizePhone(phone).length >= 12 && (paymentMethod !== 'WALLET' || walletPin.length >= 4);
     const totalAmount = isNyaradzo ? calculateNyaradzoAmount() : (parseFloat(amount) || 0);
     const totalCurrency = isNyaradzo ? (nyaradzoInfo?.currency || 'USD') : (selectedCurrency || 'USD');
 
@@ -246,7 +248,7 @@ export default function Bills() {
                         currency: nyaradzoInfo.currency || totalCurrency, sourcePhone: payPhone,
                     },
                 }),
-            }, { paymentMethodCode: paymentMethod, customerPhone: payPhone });
+            }, { paymentMethodCode: paymentMethod, customerPhone: payPhone, pin: walletPin });
             navigate(`/processing/${ref}`);
         } catch (e) {
             setConfirmOpen(false);
@@ -401,6 +403,7 @@ export default function Bills() {
                         <div style={{ padding: '14px 16px', background: 'linear-gradient(135deg, #06A3DA, #0487b8)', color: 'white', fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>🇿🇼 +263</div>
                         <input value={phone} onChange={e => { setPhoneTouched(true); setPhone(e.target.value); }} placeholder={getPaymentFieldPlaceholder()} style={{ flex: 1, padding: '14px 16px', border: 'none', background: 'transparent', fontSize: 15, outline: 'none' }} />
                     </div>
+                    {paymentMethod === 'WALLET' && <WalletPin value={walletPin} onChange={setWalletPin} />}
                 </FlowSection>
 
                 {/* In-flow Confirm and Pay button — not a floating footer */}

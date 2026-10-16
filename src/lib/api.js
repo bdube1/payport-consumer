@@ -213,9 +213,34 @@ export async function startPayment(initiatePayload, payPayload) {
     const init = await transactionsApi.initiate(initiatePayload, attempt + ':initiate');
     const tx = init.data?.data || init.data;
     rememberTransactionToken(initiatePayload.reference, tx?.accessToken);
-    const paid = await transactionsApi.pay({ ...payPayload, reference: initiatePayload.reference }, attempt + ':pay');
+    const { pin, ...pay } = payPayload;
+    if (pay.paymentMethodCode === 'WALLET') {
+        // Paid from the signed-in holder's wallet, confirmed with their PIN (never sent to /transactions/pay).
+        const paid = await walletApi.pay(initiatePayload.reference, pin);
+        return paid.data?.data || paid.data;
+    }
+    const paid = await transactionsApi.pay({ ...pay, reference: initiatePayload.reference }, attempt + ':pay');
     return paid.data?.data || paid.data;
 }
+
+/** The PayPort wallet is offered only to a signed-in customer. */
+export function visibleMethods(methods) {
+    return isLoggedIn() ? methods : methods.filter(m => m.code !== 'WALLET');
+}
+
+// ===== WALLET (Phase 8; switched on by PayPort when licensed) =====
+export const walletApi = {
+    list: () => api.get('/api/v1/wallet'),
+    open: (currency) => api.post('/api/v1/wallet/open', { currency }),
+    statement: (ref, limit = 100) => api.get(`/api/v1/wallet/${encodeURIComponent(ref)}/statement?limit=${limit}`),
+    transfer: (to, currency, amountMinor, pin, clientRef) => api.post('/api/v1/wallet/transfers', { to, currency, amountMinor, pin, clientRef }),
+    pay: (reference, pin) => api.post('/api/v1/wallet/pay', { reference, pin }),
+    payCheckout: (sessionId, pin) => api.post('/api/v1/wallet/pay-checkout', { sessionId: Number(sessionId), pin }),
+    quote: (from, to, amountMinor) => api.post('/api/v1/wallet/fx/quotes', { from, to, amountMinor }),
+    convert: (quoteRef, pin) => api.post('/api/v1/wallet/fx/conversions', { quoteRef, pin }),
+    cashOutCode: (currency, amountMinor, pin) => api.post('/api/v1/wallet/cash-out-codes', { currency, amountMinor, pin }),
+    cashOutCodes: () => api.get('/api/v1/wallet/cash-out-codes'),
+};
 
 // Merchants Module, Phase 1 -- the hosted checkout page. Deliberately
 // unauthenticated (a customer completing a merchant's checkout has no
