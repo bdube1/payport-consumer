@@ -11,7 +11,11 @@ const STATUS_CONFIG = {
     PAYMENT_FAILED: { color: '#ef4444', bg: '#fef2f2', label: 'Payment Failed', icon: '❌' },
     FULFILMENT_FAILED: { color: '#ef4444', bg: '#fef2f2', label: 'Fulfilment Failed', icon: '⚠️' },
     REFUNDED: { color: '#06b6d4', bg: '#ecfeff', label: 'Refunded', icon: '↩️' },
-    TIMEOUT: { color: '#9ca3af', bg: '#f9fafb', label: 'Timed Out', icon: '⌛' },
+    PAYMENT_TIMEOUT: { color: '#9ca3af', bg: '#f9fafb', label: 'Timed Out', icon: '⌛' },
+    FULFILMENT_RETRY: { color: '#7c3aed', bg: '#faf5ff', label: 'Processing', icon: '⚙️' },
+    MANUAL_FULFILMENT: { color: '#d97706', bg: '#fffbeb', label: 'Being Checked', icon: '🔎' },
+    REFUND_PENDING: { color: '#06b6d4', bg: '#ecfeff', label: 'Refund Pending', icon: '↩️' },
+    CANCELLED: { color: '#9ca3af', bg: '#f9fafb', label: 'Cancelled', icon: '✕' },
 };
 
 // Helper to format payment method code to display name
@@ -172,6 +176,9 @@ export default function Status() {
                                 <div>
                                     <div style={{ display: 'inline-block', padding: '4px 14px', background: cfg.bg, color: cfg.color, borderRadius: 100, fontSize: 12, fontWeight: 700, marginBottom: 6 }}>{cfg.label}</div>
                                     <div style={{ fontSize: 13, color: '#5a7a8a', fontFamily: 'monospace' }}>{transaction.reference}</div>
+                                    {transaction.outcomeMessage && (
+                                        <div style={{ fontSize: 13, color: cfg.color, marginTop: 4 }}>{transaction.outcomeMessage}</div>
+                                    )}
                                 </div>
                                 <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
                                     <div style={{ fontWeight: 800, fontSize: 24, color: '#06A3DA' }}>{formatAmount(transaction.amountCents || 0, transaction.currency)}</div>

@@ -18,6 +18,7 @@ import History from './pages/History';
 import Beneficiaries from './pages/Beneficiaries';
 import Account from './pages/Account';
 import ZimSwitchWidget from './pages/ZimSwitchWidget';
+import Wallet from './pages/Wallet';
 
 function Layout({ children }) {
     return (
@@ -58,6 +59,9 @@ export default function App() {
                     } />
                     <Route path="/beneficiaries" element={
                         <PrivateRoute><Layout><Beneficiaries /></Layout></PrivateRoute>
+                    } />
+                    <Route path="/wallet" element={
+                        <PrivateRoute><Layout><Wallet /></Layout></PrivateRoute>
                     } />
                     <Route path="/account" element={
                         <PrivateRoute><Layout><Account /></Layout></PrivateRoute>

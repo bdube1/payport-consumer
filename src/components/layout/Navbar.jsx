@@ -23,7 +23,7 @@ export default function Navbar() {
         { to: '/data', label: 'Data' },
         { to: '/bills', label: 'Bills' },
         { to: '/status', label: 'Track Order' },
-        ...(user ? [{ to: '/history', label: 'My History' }, { to: '/beneficiaries', label: 'Beneficiaries' }, { to: '/account', label: 'Account' }] : []),
+        ...(user ? [{ to: '/wallet', label: 'Wallet' }, { to: '/history', label: 'My History' }, { to: '/beneficiaries', label: 'Beneficiaries' }, { to: '/account', label: 'Account' }] : []),
         { to: '/help', label: 'Help' },
     ];
 

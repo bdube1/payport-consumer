@@ -14,11 +14,8 @@ const C = {
 const STATUS_MAP = {
     INITIATED:           { stepIndex: 0, paymentFailed: false, fulfilmentFailed: false },
     PAYMENT_PENDING:     { stepIndex: 1, paymentFailed: false, fulfilmentFailed: false },
-    // Not treated visually as "failed" -- a late provider callback can
-    // still confirm this payment (see PaymentTimeoutWatchdog on the
-    // backend), so an outright "failed" look here would be actively
-    // misleading while that's still a real possibility.
-    PAYMENT_TIMEOUT:     { stepIndex: 1, paymentFailed: false, fulfilmentFailed: false, stillChecking: true },
+    // A timed-out payment is final (owner decision): a late success is refunded, never delivered.
+    PAYMENT_TIMEOUT:     { stepIndex: 1, paymentFailed: true,  fulfilmentFailed: false },
     PAYMENT_FAILED:      { stepIndex: 1, paymentFailed: true,  fulfilmentFailed: false },
     PAYMENT_CONFIRMED:   { stepIndex: 2, paymentFailed: false, fulfilmentFailed: false },
     FULFILMENT_PENDING:  { stepIndex: 3, paymentFailed: false, fulfilmentFailed: false },
@@ -38,14 +35,30 @@ const STEPS = [
     { label: 'Delivered',         icon: '🎉' },
 ];
 
-// PAYMENT_TIMEOUT deliberately excluded -- a late provider callback can
-// still confirm the payment (see PaymentTimeoutWatchdog), so this isn't
-// actually final. Polling continues for a bounded extra window instead
-// of stopping immediately, handled separately below.
-const FINAL_STATUSES = [
-    'COMPLETED', 'PAYMENT_FAILED',
-    'FULFILMENT_FAILED', 'MANUAL_FULFILMENT', 'REFUNDED',
-];
+// The screen is driven by the backend's `outcome` (the same answer every channel gives):
+// REQUIRES_PAYMENT and PROCESSING are in progress; everything else is final.
+const IN_PROGRESS = ['REQUIRES_PAYMENT', 'PROCESSING'];
+
+// Older responses without `outcome`: derive it from the status.
+function outcomeOf(tx) {
+    if (!tx) return 'PROCESSING';
+    if (tx.outcome) return tx.outcome;
+    switch (tx.status) {
+        case 'COMPLETED': return 'SUCCEEDED';
+        case 'PAYMENT_FAILED': case 'FULFILMENT_FAILED': case 'MANUAL_FULFILMENT': return 'FAILED';
+        case 'PAYMENT_TIMEOUT': return 'TIMED_OUT';
+        case 'REFUND_PENDING': case 'REFUNDED': return 'REFUNDED';
+        case 'CANCELLED': return 'CANCELLED';
+        case 'INITIATED': return 'REQUIRES_PAYMENT';
+        default: return 'PROCESSING';
+    }
+}
+
+// NO_RESPONSE while delivering: final for now, but delivery is still being confirmed, so keep
+// checking slowly (the SMS / push also tells the customer).
+function keepCheckingSlowly(tx) {
+    return outcomeOf(tx) === 'NO_RESPONSE' && tx?.status === 'FULFILMENT_PENDING';
+}
 
 function getStepState(stepIdx, statusInfo, status) {
     const { stepIndex, paymentFailed, fulfilmentFailed } = statusInfo;
@@ -159,30 +172,25 @@ export default function Processing() {
     const [otpError, setOtpError]       = useState('');
     const intervalRef = useRef(null);
     const dotsRef     = useRef(null);
-    // Set the moment PAYMENT_TIMEOUT is first seen -- polling keeps
-    // going for a bounded window after that (a late callback can still
-    // confirm the payment) rather than either stopping immediately
-    // (missing a real late confirmation) or polling forever (a
-    // genuinely abandoned transaction that will never resolve).
-    const timeoutSeenAtRef = useRef(null);
-    const EXTRA_POLL_WINDOW_MS = 90000;
+    const slowRef     = useRef(false);
 
     const poll = async () => {
         try {
             const r  = await transactionsApi.getStatus(ref);
             const tx = r.data?.data || r.data;
             setTransaction(tx);
+            setFetchError('');
 
-            if (tx && tx.status === 'PAYMENT_TIMEOUT' && !timeoutSeenAtRef.current) {
-                timeoutSeenAtRef.current = Date.now();
-            }
-
-            const timedOutTooLong = timeoutSeenAtRef.current
-                && (Date.now() - timeoutSeenAtRef.current) > EXTRA_POLL_WINDOW_MS;
-
-            if (tx && (FINAL_STATUSES.includes(tx.status) || timedOutTooLong)) {
+            const outcome = outcomeOf(tx);
+            if (tx && !IN_PROGRESS.includes(outcome)) {
                 clearInterval(intervalRef.current);
                 clearInterval(dotsRef.current);
+                if (keepCheckingSlowly(tx) && !slowRef.current) {
+                    slowRef.current = true;
+                    intervalRef.current = setInterval(poll, 15000);
+                } else if (!keepCheckingSlowly(tx)) {
+                    slowRef.current = false;
+                }
             }
         } catch (e) {
             setFetchError(e.response?.data?.message || 'Unable to get status');
@@ -240,14 +248,21 @@ export default function Processing() {
 
     const status     = transaction?.status || 'INITIATED';
     const statusInfo = STATUS_MAP[status] || STATUS_MAP['INITIATED'];
+    const outcome    = outcomeOf(transaction);
+    // The provider's own words for a failure, the timeout / no-response wording otherwise, or
+    // the delivery note while processing. Shown exactly as sent.
+    const outcomeMessage = transaction?.outcomeMessage || transaction?.failureReason || '';
 
-    const isComplete      = status === 'COMPLETED';
-    const isPaymentFailed = statusInfo.paymentFailed;
-    const isFulfilFailed  = statusInfo.fulfilmentFailed;
+    const isComplete      = outcome === 'SUCCEEDED';
+    const isTimedOut      = outcome === 'TIMED_OUT' || (outcome === 'NO_RESPONSE' && !keepCheckingSlowly(transaction));
+    const isConfirmingDelivery = keepCheckingSlowly(transaction);
+    const isFulfilFailed  = outcome === 'FAILED' && statusInfo.stepIndex >= 2;
+    const isPaymentFailed = (outcome === 'FAILED' && !isFulfilFailed) || isTimedOut;
     const isFailed        = isPaymentFailed || isFulfilFailed;
-    const isRefunded      = status === 'REFUNDED';
-    const isPending       = !isComplete && !isFailed && !isRefunded;
-    const isStillChecking = status === 'PAYMENT_TIMEOUT';
+    const isRefunded      = outcome === 'REFUNDED';
+    const isCancelled     = outcome === 'CANCELLED';
+    const isPending       = IN_PROGRESS.includes(outcome) || isConfirmingDelivery;
+    const isStillChecking = isConfirmingDelivery;
     const isCardPayment   = ['ZIMSWITCH','VISA','MASTERCARD'].includes(transaction?.paymentMethodCode);
 
     const paymentMethodName = getPaymentMethodName(transaction?.paymentMethodCode);
@@ -262,18 +277,22 @@ export default function Processing() {
                 : `linear-gradient(135deg, ${C.blue}, #0487b8)`;
 
     const headline = isComplete      ? `${transaction?.productName || 'Order'} Delivered! 🎉`
-        : isPaymentFailed ? `Processing ${paymentMethodName} Payment Failed`
-            : isFulfilFailed  ? `Processing ${transaction?.productName || 'Order'} Failed`
+        : isTimedOut      ? 'Payment not completed in time'
+        : isPaymentFailed ? `${paymentMethodName} payment failed`
+            : isFulfilFailed  ? `${transaction?.productName || 'Order'} could not be delivered`
                 : isRefunded      ? 'Refunded'
-                    : `Processing${dots}`;
+                    : isCancelled     ? 'Cancelled'
+                        : isConfirmingDelivery ? 'Confirming delivery'
+                            : `Processing${dots}`;
 
     // No subtitle for payment failed since we have the message at the bottom
     const subtitle = isComplete      ? 'Your airtime has been sent successfully.'
         : isPaymentFailed ? ''
-            : isFulfilFailed  ? `Your ${transaction?.productName || 'order'} could not be processed. Our team is on it — you will not be charged.`
-                : isRefunded      ? 'Your payment has been refunded.'
-                    : isStillChecking ? 'This is taking a bit longer than usual — still checking with your provider.'
-                        : 'Hang tight — this usually takes under 30 seconds.';
+            : isFulfilFailed  ? ''
+                : isRefunded      ? (outcomeMessage || 'Your payment has been refunded.')
+                    : isCancelled     ? 'This payment was cancelled.'
+                        : isStillChecking ? outcomeMessage
+                            : (outcomeMessage || 'Hang tight — this usually takes under 30 seconds.');
 
     const handleTryAgain = () => navigate('/');
 
@@ -369,12 +388,12 @@ export default function Processing() {
                     )}
 
                     {/* Pending hint */}
-                    {isPending && !transaction?.requiresOtpEntry && (
+                    {isPending && !transaction?.requiresOtpEntry && (statusInfo.stepIndex < 2 || isStillChecking) && (
                         <div style={{ background: 'rgba(6,163,218,0.05)', borderRadius: 12, padding: '10px 14px', marginBottom: 14, border: '1.5px solid rgba(6,163,218,0.1)', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10 }}>
                             <div style={{ fontSize: 16, flexShrink: 0 }}>{isStillChecking ? '⏳' : isCardPayment ? '💳' : '📱'}</div>
                             <p style={{ fontSize: 12.5, color: '#5a7a8a', lineHeight: 1.4, margin: 0 }}>
                                 {isStillChecking
-                                    ? "If you've already approved this on your phone, no need to do anything else — we're still confirming it with your provider."
+                                    ? 'Your payment was received. We are confirming the delivery with the provider and will send you an SMS.'
                                     : isCardPayment
                                         ? 'Your card payment is being confirmed. This page updates automatically.'
                                         : <><strong>Check your phone</strong> for a payment prompt. This page updates automatically.</>
@@ -397,7 +416,8 @@ export default function Processing() {
                                     exceeded, wrong PIN, etc.) always saw
                                     "was not completed" with no indication
                                     of why or what to do differently. */}
-                                ⚠️ {transaction?.failureReason || `Your ${paymentMethodName} payment of $${amount} was not completed. No money was deducted.`}
+                                ⚠️ {outcomeMessage || `Your ${paymentMethodName} payment was not completed.`}
+                                {isTimedOut && <><br />If money left your wallet after this, it will be refunded automatically: a late payment is never used.</>}
                             </p>
                         </div>
                     )}
@@ -411,9 +431,9 @@ export default function Processing() {
                                     of the actual reason, even when the backend
                                     had a specific one (e.g. Econet's own status
                                     codes, properly translated). */}
-                                ⚠️ Payment of <strong>${amount}</strong> received.
-                                {transaction?.failureReason ? ` ${transaction.failureReason} ` : ' '}
-                                Delivery is being retried — ref <strong>{ref}</strong>.
+                                ⚠️ Payment of <strong>{transaction?.currency || ''} {amount}</strong> received, but delivery failed.
+                                {outcomeMessage ? ` ${outcomeMessage} ` : ' '}
+                                We will deliver it or refund you — ref <strong>{ref}</strong>.
                             </p>
                         </div>
                     )}

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { checkoutApi, formatAmount, BASE } from '../lib/api';
+import { checkoutApi, walletApi, isLoggedIn, formatAmount, BASE } from '../lib/api';
 
 const TERMINAL_STATUSES = new Set(['PAID', 'FAILED', 'EXPIRED', 'CANCELLED']);
 const POLL_INTERVAL_MS = 3000;
@@ -32,6 +32,10 @@ export default function Checkout() {
     const pollRef = useRef(null);
 
     const isCardMethod = method === 'ZIMSWITCH';
+    const isWallet = method === 'WALLET';
+    const [pin, setPin] = useState('');
+    // A signed-in PayPort customer can also pay from their wallet (only if PayPort has switched wallets on).
+    const labels = isLoggedIn() ? { ...METHOD_LABELS, WALLET: 'PayPort Wallet' } : METHOD_LABELS;
 
     const loadSession = async () => {
         try {
@@ -101,6 +105,20 @@ export default function Checkout() {
         e.preventDefault();
         setPayError('');
 
+        if (isWallet) {
+            if (pin.length < 4) { setPayError('Enter your PayPort PIN'); return; }
+            setSubmitting(true);
+            try {
+                await walletApi.payCheckout(sessionId, pin);
+                setPin('');
+                await loadSession();
+            } catch (err) {
+                setPayError(err.response?.data?.message || 'Could not pay from your wallet. Please try again.');
+            } finally {
+                setSubmitting(false);
+            }
+            return;
+        }
         if (!isCardMethod && !/^\+263\d{9}$/.test(phone)) {
             setPayError('Enter your number in the format +263771234567');
             return;
@@ -223,7 +241,7 @@ export default function Checkout() {
 
                         <label style={S.label}>Pay with</label>
                         <div style={S.methodGrid}>
-                            {Object.entries(METHOD_LABELS).map(([code, label]) => (
+                            {Object.entries(labels).map(([code, label]) => (
                                 <button key={code} type="button" onClick={() => setMethod(code)}
                                     style={{ ...S.methodBtn, ...(method === code ? S.methodBtnActive : {}) }}>
                                     {label}
@@ -231,7 +249,17 @@ export default function Checkout() {
                             ))}
                         </div>
 
-                        {!isCardMethod && (
+                        {isWallet && (
+                            <>
+                                <label style={S.label}>PayPort PIN</label>
+                                <input
+                                    type="password" inputMode="numeric" maxLength={6} value={pin}
+                                    onChange={e => setPin(e.target.value.replace(/\D/g, ''))} style={S.input} required
+                                />
+                            </>
+                        )}
+
+                        {!isCardMethod && !isWallet && (
                             <>
                                 <label style={S.label}>Mobile money number</label>
                                 <input
