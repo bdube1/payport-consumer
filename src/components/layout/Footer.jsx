@@ -88,7 +88,7 @@ const colTitle = { color: 'white', fontSize: 14, marginBottom: 16, letterSpacing
 const colLink = { display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: 14, marginBottom: 10, textDecoration: 'none' };
 const contactLine = { color: 'rgba(255,255,255,0.6)', fontSize: 14, marginBottom: 10 };
 const socialStyle = {
-    width: 34, height: 34, borderRadius: '50%', background: '#ffffff',
+    width: 34, height: 34, borderRadius: '50%', background: 'var(--bg-card)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     textDecoration: 'none', transition: 'transform 0.15s',
     boxShadow: '0 2px 6px rgba(0,0,0,0.15)',

@@ -6,7 +6,7 @@ import { useAuth } from '../lib/AuthContext';
 import FlowSection from '../components/flow/FlowSection';
 import ConfirmModal from '../components/flow/ConfirmModal';
 
-const C = { primary: '#06A3DA', green: '#34AD54', dark: '#091E3E', light: '#EEF9FF' };
+const C = { primary: '#06A3DA', green: '#34AD54', dark: 'var(--text)', light: 'var(--light)' };
 
 // Network logo mapping (fallback if no logo in API)
 const NETWORK_LOGOS = {
@@ -265,7 +265,7 @@ export default function Airtime() {
                         </div>
                     )}
                     {network && !networkLoading && !isProductActive && (
-                        <div style={{ marginTop: 12, background: '#fee2e2', border: '1px solid #fecaca', borderRadius: 8, padding: '12px 16px', color: '#b91c1c', fontSize: 14, textAlign: 'center' }}>
+                        <div style={{ marginTop: 12, background: 'var(--danger-bg)', border: '1px solid #fecaca', borderRadius: 8, padding: '12px 16px', color: '#b91c1c', fontSize: 14, textAlign: 'center' }}>
                             ⚠️ {network.networkName} airtime is currently unavailable.
                         </div>
                     )}

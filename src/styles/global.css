@@ -13,8 +13,13 @@
   --font-display: 'Rubik', sans-serif;
 }
 
-/* Light theme (default and only theme now — dark mode toggle removed) */
+/* Light theme (default) */
 [data-theme="light"], :root {
+  --light: #EEF9FF;
+  --danger-bg: #fef2f2;
+  --text-3: #94b8ca;
+  --nav-bg-glass: rgba(255,255,255,0.97);
+  --page-bg: #FBFDFF;
   --bg: #ffffff;
   --bg-2: #f4f8fb;
   --bg-card: #ffffff;
@@ -27,9 +32,14 @@
   --footer-bg: #091E3E;
 }
 
-/* Dark theme variables kept for any component that still reads them,
-   but there's no toggle in the UI anymore — light is the only reachable state. */
-[data-theme="dark"] {
+/* Dark theme (the moon/sun button in the top bar) */
+:root[data-theme="dark"] {
+  --light: rgba(6,163,218,0.10);
+  --danger-bg: rgba(229,62,62,0.14);
+  --text-3: #6f8ea3;
+  --nav-bg-glass: rgba(10,15,30,0.95);
+  --page-bg: #070C18;
+  color-scheme: dark;
   --bg: #0a0f1e;
   --bg-2: #0f1829;
   --bg-card: #111827;
@@ -57,7 +67,7 @@ body {
     radial-gradient(1100px 550px at 12% -8%, rgba(6,163,218,0.055), transparent),
     radial-gradient(900px 500px at 100% 15%, rgba(52,173,84,0.045), transparent),
     radial-gradient(800px 500px at 50% 100%, rgba(108,92,231,0.03), transparent),
-    #FBFDFF;
+    var(--page-bg);
   background-attachment: fixed;
 }
 
@@ -113,3 +123,11 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
   .page-card { padding: 20px 16px !important; }
   .amount-grid { grid-template-columns: repeat(2, 1fr) !important; }
 }
+
+/* Form fields follow the theme */
+input, select, textarea { color: var(--text); }
+input::placeholder, textarea::placeholder { color: var(--text-3); }
+:root[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]),
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] textarea { background-color: var(--bg-2); border-color: var(--border); }
+:root[data-theme="dark"] option { background: var(--bg-card); color: var(--text); }

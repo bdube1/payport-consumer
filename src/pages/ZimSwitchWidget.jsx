@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { transactionsApi } from '../lib/api';
 
-const C = { primary: '#06A3DA', green: '#34AD54', dark: '#091E3E', light: '#EEF9FF' };
+const C = { primary: '#06A3DA', green: '#34AD54', dark: 'var(--text)', light: 'var(--light)' };
 
 /**
  * ZimSwitchWidget
@@ -179,7 +179,7 @@ export default function ZimSwitchWidget() {
 
 const pageWrap = {
     minHeight: '100vh',
-    background: '#EEF9FF',
+    background: 'var(--light)',
     paddingTop: 80,
     paddingBottom: 80,
     display: 'flex',

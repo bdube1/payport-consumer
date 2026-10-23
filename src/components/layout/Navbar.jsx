@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../lib/AuthContext';
 import { authApi } from '../../lib/api';
 import Logo from './Logo';
+import { useTheme } from '../../lib/theme.jsx';
 
 export default function Navbar() {
     const { user, logout } = useAuth();
@@ -28,11 +29,18 @@ export default function Navbar() {
     ];
 
     const isActive = (path) => location.pathname === path;
+    const { dark, toggle } = useTheme();
+    const themeButton = (
+        <button onClick={toggle} title={dark ? 'Light mode' : 'Dark mode'} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'} style={{
+            width: 40, height: 40, borderRadius: 10, border: '1px solid var(--border)', background: 'transparent',
+            color: 'var(--text)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, flexShrink: 0,
+        }}>{dark ? '☀' : '☾'}</button>
+    );
 
     return (
         <nav style={{
             position: 'sticky', top: 0, zIndex: 1000,
-            background: 'rgba(255,255,255,0.97)',
+            background: 'var(--nav-bg-glass)',
             backdropFilter: 'blur(12px)',
             borderBottom: '1px solid rgba(6,163,218,0.12)',
             boxShadow: '0 2px 20px rgba(6,163,218,0.08)',
@@ -94,6 +102,8 @@ export default function Navbar() {
                             }}>Logout</button>
                         </div>
                     )}
+
+                    {themeButton}
 
                     {/* Mobile hamburger */}
                     <button onClick={() => setMenuOpen(!menuOpen)} className="show-mobile" style={{

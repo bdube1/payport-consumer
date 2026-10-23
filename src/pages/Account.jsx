@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
 import { authApi } from '../lib/api';
 
-const C = { primary: '#06A3DA', green: '#34AD54', dark: '#091E3E', accent: '#091E3E', red: '#e53e3e' };
+const C = { primary: '#06A3DA', green: '#34AD54', dark: 'var(--text)', accent: '#091E3E', red: '#e53e3e' };
 
 export default function Account() {
     const { user } = useAuth();
@@ -39,7 +39,7 @@ export default function Account() {
 
     const inputStyle = {
         width: '100%', padding: '14px 16px', fontSize: 20, letterSpacing: 8, textAlign: 'center',
-        border: `1px solid ${C.dark}22`, borderRadius: 10, outline: 'none', boxSizing: 'border-box',
+        border: '1px solid var(--border)', borderRadius: 10, outline: 'none', boxSizing: 'border-box',
         fontWeight: 700, color: C.dark,
     };
 
@@ -48,11 +48,11 @@ export default function Account() {
             <h1 style={{ fontSize: 24, fontWeight: 800, color: C.dark, marginBottom: 4 }}>Account</h1>
             <p style={{ color: '#5b6b82', fontSize: 14, marginBottom: 28 }}>{user.fullName} · {user.phone}</p>
 
-            <div style={{ background: '#fff', borderRadius: 16, padding: 28, boxShadow: '0 2px 20px rgba(6,163,218,0.08)', border: `1px solid ${C.primary}15` }}>
+            <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: 28, boxShadow: '0 2px 20px rgba(6,163,218,0.08)', border: `1px solid ${C.primary}15` }}>
                 <h2 style={{ fontSize: 16, fontWeight: 700, color: C.dark, marginBottom: 20 }}>Change PIN</h2>
 
                 {error && (
-                    <div style={{ background: '#fee2e2', color: C.red, padding: '10px 14px', borderRadius: 10, fontSize: 13, marginBottom: 16 }}>{error}</div>
+                    <div style={{ background: 'var(--danger-bg)', color: C.red, padding: '10px 14px', borderRadius: 10, fontSize: 13, marginBottom: 16 }}>{error}</div>
                 )}
                 {success && (
                     <div style={{ background: '#dcfce7', color: C.green, padding: '10px 14px', borderRadius: 10, fontSize: 13, marginBottom: 16 }}>{success}</div>

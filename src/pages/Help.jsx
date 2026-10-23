@@ -26,7 +26,7 @@ export default function Help() {
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: '#EEF9FF', paddingTop: 100 }}>
+    <div style={{ minHeight: '100vh', background: 'var(--light)', paddingTop: 100 }}>
       {/* Hero */}
       <div style={{ background: 'linear-gradient(160deg, #0B1024, #0E1430)', padding: '60px 24px', textAlign: 'center', marginBottom: 0 }}>
         <h1 style={{ fontSize: 40, fontWeight: 800, color: 'white', letterSpacing: '-0.03em', marginBottom: 12 }}>How can we help?</h1>
@@ -48,8 +48,8 @@ export default function Help() {
           {CATS.map(cat => (
             <button key={cat} onClick={() => setActiveCat(cat)} style={{
               padding: '8px 20px', border: `1.5px solid ${activecat === cat ? '#06A3DA' : 'rgba(6,163,218,0.2)'}`,
-              borderRadius: 100, background: activecat === cat ? '#06A3DA' : 'white',
-              color: activecat === cat ? 'white' : '#5a7a8a', fontWeight: 600, fontSize: 14, cursor: 'pointer', transition: 'all 0.2s',
+              borderRadius: 100, background: activecat === cat ? '#06A3DA' : 'var(--bg-card)',
+              color: activecat === cat ? 'white' : 'var(--text-2)', fontWeight: 600, fontSize: 14, cursor: 'pointer', transition: 'all 0.2s',
             }}>{cat}</button>
           ))}
         </div>
@@ -58,29 +58,29 @@ export default function Help() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {filtered.map((faq, i) => (
             <div key={i} onClick={() => setOpen(open === i ? null : i)} style={{
-              background: 'white', borderRadius: 16, border: `1.5px solid ${open === i ? '#06A3DA' : 'rgba(6,163,218,0.12)'}`,
+              background: 'var(--bg-card)', borderRadius: 16, border: `1.5px solid ${open === i ? '#06A3DA' : 'rgba(6,163,218,0.12)'}`,
               overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s',
               boxShadow: open === i ? '0 4px 20px rgba(6,163,218,0.1)' : 'none',
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px' }}>
                 <div>
                   <span style={{ fontSize: 11, color: '#06A3DA', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6, display: 'block' }}>{faq.cat}</span>
-                  <h3 style={{ fontSize: 16, fontWeight: 700, color: '#091E3E', margin: 0 }}>{faq.q}</h3>
+                  <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', margin: 0 }}>{faq.q}</h3>
                 </div>
-                <div style={{ width: 28, height: 28, borderRadius: '50%', background: open === i ? '#06A3DA' : '#EEF9FF', color: open === i ? 'white' : '#06A3DA', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 16, transition: 'all 0.3s', transform: open === i ? 'rotate(180deg)' : 'none' }}>
+                <div style={{ width: 28, height: 28, borderRadius: '50%', background: open === i ? '#06A3DA' : 'var(--light)', color: open === i ? 'white' : '#06A3DA', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 16, transition: 'all 0.3s', transform: open === i ? 'rotate(180deg)' : 'none' }}>
                   ↓
                 </div>
               </div>
               {open === i && (
                 <div style={{ padding: '0 24px 20px', borderTop: '1px solid rgba(6,163,218,0.1)' }}>
-                  <p style={{ color: '#5a7a8a', fontSize: 15, lineHeight: 1.7, marginTop: 16 }}>{faq.a}</p>
+                  <p style={{ color: 'var(--text-2)', fontSize: 15, lineHeight: 1.7, marginTop: 16 }}>{faq.a}</p>
                 </div>
               )}
             </div>
           ))}
 
           {filtered.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '48px 24px', color: '#5a7a8a' }}>
+            <div style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--text-2)' }}>
               <div style={{ fontSize: 48, marginBottom: 16 }}>🤔</div>
               <p style={{ fontSize: 16 }}>No results found. Try a different search or email <a href="mailto:hello@payport.africa" style={{ color: '#06A3DA', fontWeight: 600 }}>hello@payport.africa</a></p>
             </div>
