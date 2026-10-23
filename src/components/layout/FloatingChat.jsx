@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { assistantApi } from '../../lib/api';
 
 // Same keyword-matched FAQ engine as the website's version — kept as a
 // separate copy since these are two separate apps, but intentionally identical.
@@ -34,21 +35,30 @@ export default function FloatingChat() {
         { from: 'bot', text: "👋 Hi! I'm the Payport assistant. Ask me about airtime, data, bills, or any of our products — or leave a message and the team will follow up." },
     ]);
     const [input, setInput] = useState('');
+    const [conversationId, setConversationId] = useState(null);
+    const [thinking, setThinking] = useState(false);
     const bodyRef = useRef(null);
 
     useEffect(() => {
         if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
     }, [messages, open]);
 
-    const send = (e) => {
+    const send = async (e) => {
         e.preventDefault();
-        if (!input.trim()) return;
+        if (!input.trim() || thinking) return;
         const question = input;
         setMessages(m => [...m, { from: 'user', text: question }]);
         setInput('');
-        setTimeout(() => {
-            setMessages(m => [...m, { from: 'bot', text: getBotReply(question) }]);
-        }, 450);
+        setThinking(true);
+        let reply;
+        try {
+            const r = await assistantApi.chat(conversationId, question);
+            const d = r.data?.data || r.data || {};
+            if (d.conversationId) setConversationId(d.conversationId);
+            reply = d.reply;
+        } catch { /* answered locally below */ }
+        setMessages(m => [...m, { from: 'bot', text: reply || getBotReply(question) }]);
+        setThinking(false);
     };
 
     return (
