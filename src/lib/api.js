@@ -229,6 +229,17 @@ export function visibleMethods(methods) {
 }
 
 // ===== WALLET (Phase 8; switched on by PayPort when licensed) =====
+// Countries and currencies PayPort serves (public).
+export const marketsApi = { list: () => api.get('/api/v1/markets') };
+export async function liveCurrencies() {
+    try {
+        const r = await marketsApi.list();
+        const m = r.data?.data || r.data || [];
+        const c = [...new Set(m.flatMap(x => (x.currencies || []).filter(y => y.live).map(y => y.code)))];
+        return c.length ? c : ['USD', 'ZWG'];
+    } catch { return ['USD', 'ZWG']; }
+}
+
 export const walletApi = {
     list: () => api.get('/api/v1/wallet'),
     open: (currency) => api.post('/api/v1/wallet/open', { currency }),
@@ -248,6 +259,7 @@ export const walletApi = {
 // endpoints, not the customer transactionsApi above.
 export const checkoutApi = {
     getSession: (sessionId) => api.get(`/api/v1/checkout/${sessionId}`),
+    qr: (sessionId) => api.get(`/api/v1/checkout/${sessionId}/qr`),
     pay: (sessionId, payload) => api.post(`/api/v1/checkout/${sessionId}/pay`, payload),
 };
 
