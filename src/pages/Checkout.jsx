@@ -1,4 +1,26 @@
 import { useState, useEffect, useRef } from 'react';
+import QRCode from 'qrcode';
+
+// Scan-to-pay code for the session, shown only when QR payments are switched on.
+function ScanToPay({ sessionId }) {
+    const [img, setImg] = useState(null);
+    useEffect(() => {
+        let live = true;
+        checkoutApi.qr(sessionId)
+            .then(r => (r.data?.data || r.data)?.payload)
+            .then(p => p && QRCode.toDataURL(p, { margin: 1, width: 220 }))
+            .then(url => { if (live && url) setImg(url); })
+            .catch(() => {});
+        return () => { live = false; };
+    }, [sessionId]);
+    if (!img) return null;
+    return (
+        <div style={{ textAlign: 'center', margin: '4px 0 18px' }}>
+            <img src={img} alt="Scan to pay" style={{ width: 200, height: 200, borderRadius: 12, background: '#fff', padding: 8 }} />
+            <p style={{ fontSize: 13, color: 'var(--text-2)', margin: '6px 0 0' }}>Scan to pay, or pay below</p>
+        </div>
+    );
+}
 import { useParams } from 'react-router-dom';
 import { checkoutApi, walletApi, isLoggedIn, formatAmount, BASE } from '../lib/api';
 
@@ -235,6 +257,7 @@ export default function Checkout() {
                     </div>
                 )}
 
+                {session.status === 'CREATED' && <ScanToPay sessionId={sessionId} />}
                 {session.status === 'CREATED' && (
                     <form onSubmit={handleSubmit} style={S.form}>
                         {payError && <div style={S.errorBox}>{payError}</div>}

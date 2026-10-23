@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
-import { walletApi, productsApi, startPayment, paymentError, generateReference, formatAmount, normalizePhone } from '../lib/api';
+import { walletApi, productsApi, startPayment, paymentError, generateReference, formatAmount, normalizePhone, liveCurrencies } from '../lib/api';
 
 const C = { primary: '#06A3DA', green: '#34AD54', dark: '#091E3E', muted: '#5a7a8a', red: '#e53e3e', soft: '#EEF9FF' };
 
@@ -118,8 +118,11 @@ function Page({ children }) {
 }
 
 function OpenWallet({ existing, busy, onOpen }) {
-    const options = ['USD', 'ZWG', 'ZMW'].filter(c => !existing.includes(c));
-    const [ccy, setCcy] = useState(options[0] || '');
+    const [all, setAll] = useState([]);
+    useEffect(() => { liveCurrencies().then(setAll); }, []);
+    const options = all.filter(c => !existing.includes(c));
+    const [ccy, setCcy] = useState('');
+    useEffect(() => { if (!options.includes(ccy)) setCcy(options[0] || ''); }, [all.join(), existing.join()]); // eslint-disable-line react-hooks/exhaustive-deps
     if (options.length === 0) return null;
     return <div style={{ ...card, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         <div style={{ fontWeight: 700, color: '#091E3E' }}>Open a wallet</div>
