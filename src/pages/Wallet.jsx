@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
 import { walletApi, productsApi, startPayment, paymentError, generateReference, formatAmount, normalizePhone, liveCurrencies } from '../lib/api';
 
-const C = { primary: '#06A3DA', green: '#34AD54', dark: '#091E3E', muted: '#5a7a8a', red: '#e53e3e', soft: '#EEF9FF' };
+const C = { primary: '#06A3DA', green: '#34AD54', dark: 'var(--text)', muted: 'var(--text-2)', red: '#e53e3e', soft: 'var(--light)' };
 
-const card = { background: 'white', borderRadius: 16, padding: 20, boxShadow: '0 4px 20px rgba(9,30,62,0.06)', border: '1px solid rgba(6,163,218,0.12)' };
+const card = { background: 'var(--bg-card)', borderRadius: 16, padding: 20, boxShadow: '0 4px 20px rgba(9,30,62,0.06)', border: '1px solid rgba(6,163,218,0.12)' };
 const input = { width: '100%', boxSizing: 'border-box', padding: '12px 14px', borderRadius: 10, border: '2px solid rgba(6,163,218,0.2)', background: C.soft, fontSize: 15, outline: 'none' };
 const label = { display: 'block', fontSize: 12, fontWeight: 700, color: C.muted, margin: '12px 0 6px', textTransform: 'uppercase', letterSpacing: '0.04em' };
 const btn = (enabled = true, color = C.green) => ({
@@ -74,7 +74,7 @@ export default function Wallet() {
                 {state.wallets.map(w => (
                     <button key={w.walletRef} onClick={() => setSelected(w.walletRef)} style={{
                         ...card, textAlign: 'left', cursor: 'pointer',
-                        background: w.walletRef === wallet?.walletRef ? `linear-gradient(135deg, ${C.primary}, #0487b8)` : 'white',
+                        background: w.walletRef === wallet?.walletRef ? `linear-gradient(135deg, ${C.primary}, #0487b8)` : 'var(--bg-card)',
                         color: w.walletRef === wallet?.walletRef ? 'white' : C.dark,
                     }}>
                         <div style={{ fontSize: 12, opacity: 0.85 }}>{w.currency} wallet · {w.walletRef}{w.status !== 'ACTIVE' ? ` · ${w.status}` : ''}</div>
@@ -94,7 +94,7 @@ export default function Wallet() {
                         <button key={k} onClick={() => { setTab(k); setError(''); setNotice(''); }} style={{
                             padding: '9px 16px', borderRadius: 20, fontWeight: 700, fontSize: 13, cursor: 'pointer',
                             border: `2px solid ${tab === k ? C.primary : 'rgba(6,163,218,0.2)'}`,
-                            background: tab === k ? 'rgba(6,163,218,0.08)' : 'white', color: C.dark,
+                            background: tab === k ? 'rgba(6,163,218,0.08)' : 'var(--bg-card)', color: C.dark,
                         }}>{t}</button>
                     ))}
                 </div>
@@ -112,7 +112,7 @@ export default function Wallet() {
 
 function Page({ children }) {
     return <div style={{ maxWidth: 760, margin: '0 auto', padding: '28px 16px 48px' }}>
-        <h2 style={{ color: '#091E3E', margin: '0 0 16px' }}>My wallet</h2>
+        <h2 style={{ color: 'var(--text)', margin: '0 0 16px' }}>My wallet</h2>
         {children}
     </div>;
 }
@@ -125,7 +125,7 @@ function OpenWallet({ existing, busy, onOpen }) {
     useEffect(() => { if (!options.includes(ccy)) setCcy(options[0] || ''); }, [all.join(), existing.join()]); // eslint-disable-line react-hooks/exhaustive-deps
     if (options.length === 0) return null;
     return <div style={{ ...card, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <div style={{ fontWeight: 700, color: '#091E3E' }}>Open a wallet</div>
+        <div style={{ fontWeight: 700, color: 'var(--text)' }}>Open a wallet</div>
         <select value={ccy} onChange={e => setCcy(e.target.value)} style={{ ...input, marginTop: 8 }}>
             {options.map(o => <option key={o}>{o}</option>)}
         </select>
@@ -161,7 +161,7 @@ function TopUp({ wallet, user, navigate, setError }) {
         }
     };
     return <>
-        <h4 style={{ margin: 0, color: '#091E3E' }}>Top up {wallet.currency} wallet</h4>
+        <h4 style={{ margin: 0, color: 'var(--text)' }}>Top up {wallet.currency} wallet</h4>
         <span style={label}>Amount ({wallet.currency})</span>
         <input style={input} value={amount} onChange={e => setAmount(e.target.value)} inputMode="decimal" placeholder="0.00" />
         <span style={label}>Pay with</span>
@@ -182,7 +182,7 @@ function Send({ wallet, busy, run }) {
     const cents = toMinor(amount);
     const ok = to.trim().length >= 9 && cents > 0 && pin.length >= 4 && !busy;
     return <>
-        <h4 style={{ margin: 0, color: '#091E3E' }}>Send money</h4>
+        <h4 style={{ margin: 0, color: 'var(--text)' }}>Send money</h4>
         <span style={label}>To (phone number or wallet number)</span>
         <input style={input} value={to} onChange={e => setTo(e.target.value)} placeholder="+263771234567 or W…" />
         <span style={label}>Amount ({wallet.currency})</span>
@@ -201,14 +201,14 @@ function Convert({ wallet, wallets, busy, run, setError }) {
     const [quote, setQuote] = useState(null);
     const [pin, setPin] = useState('');
     const cents = toMinor(amount);
-    if (targets.length === 0) return <p style={{ color: '#5a7a8a' }}>Open a wallet in another currency to convert between your wallets.</p>;
+    if (targets.length === 0) return <p style={{ color: 'var(--text-2)' }}>Open a wallet in another currency to convert between your wallets.</p>;
     const getQuote = async () => {
         setError(''); setQuote(null);
         try { const r = await walletApi.quote(wallet.currency, to, cents); setQuote(r.data?.data); }
         catch (e) { setError(msg(e, 'No quote available right now.')); }
     };
     return <>
-        <h4 style={{ margin: 0, color: '#091E3E' }}>Convert between your wallets</h4>
+        <h4 style={{ margin: 0, color: 'var(--text)' }}>Convert between your wallets</h4>
         <span style={label}>From {wallet.currency}, amount</span>
         <input style={input} value={amount} onChange={e => { setAmount(e.target.value); setQuote(null); }} inputMode="decimal" placeholder="0.00" />
         <span style={label}>To</span>
@@ -216,9 +216,9 @@ function Convert({ wallet, wallets, busy, run, setError }) {
             {targets.map(t => <option key={t.currency}>{t.currency}</option>)}
         </select>
         {!quote && <button disabled={!cents || busy} onClick={getQuote} style={btn(!!cents && !busy, '#06A3DA')}>Get quote</button>}
-        {quote && <div style={{ marginTop: 14, padding: 14, borderRadius: 10, background: '#EEF9FF' }}>
+        {quote && <div style={{ marginTop: 14, padding: 14, borderRadius: 10, background: 'var(--light)' }}>
             <div>You give <b>{formatAmount(quote.amountMinor, quote.from)}</b> and get <b>{formatAmount(quote.convertedMinor, quote.to)}</b></div>
-            <div style={{ fontSize: 12, color: '#5a7a8a', marginTop: 4 }}>Rate {quote.rate} · valid until {when(quote.validUntil)}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 4 }}>Rate {quote.rate} · valid until {when(quote.validUntil)}</div>
             <span style={label}>PIN</span>
             <input style={input} type="password" inputMode="numeric" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))} />
             <button disabled={pin.length < 4 || busy} onClick={() => run(() => walletApi.convert(quote.quoteRef, pin),
@@ -237,8 +237,8 @@ function CashOut({ wallet, busy, run }) {
     const cents = toMinor(amount);
     const ok = cents > 0 && pin.length >= 4 && !busy;
     return <>
-        <h4 style={{ margin: 0, color: '#091E3E' }}>Cash out at an agent</h4>
-        <p style={{ fontSize: 13, color: '#5a7a8a' }}>Get a one-time code, then give the code and your phone number to a PayPort agent for cash.</p>
+        <h4 style={{ margin: 0, color: 'var(--text)' }}>Cash out at an agent</h4>
+        <p style={{ fontSize: 13, color: 'var(--text-2)' }}>Get a one-time code, then give the code and your phone number to a PayPort agent for cash.</p>
         <span style={label}>Amount ({wallet.currency})</span>
         <input style={input} value={amount} onChange={e => setAmount(e.target.value)} inputMode="decimal" placeholder="0.00" />
         <span style={label}>PIN</span>
@@ -247,7 +247,7 @@ function CashOut({ wallet, busy, run }) {
             d => `Your cash-out code: ${d.code}\nAmount ${formatAmount(d.amountMinor, d.currency)}, valid until ${when(d.expiresAt)}.\nIt works once.`)
             .then(() => { setPin(''); refresh(); })} style={btn(ok)}>Get code</button>
         {codes.length > 0 && <table style={{ width: '100%', marginTop: 16, fontSize: 13, borderCollapse: 'collapse' }}>
-            <thead><tr style={{ color: '#5a7a8a', textAlign: 'left' }}><th>Created</th><th>Amount</th><th>Status</th></tr></thead>
+            <thead><tr style={{ color: 'var(--text-2)', textAlign: 'left' }}><th>Created</th><th>Amount</th><th>Status</th></tr></thead>
             <tbody>{codes.map(c => <tr key={c.id} style={{ borderTop: '1px solid #eef' }}>
                 <td>{when(c.created_at)}</td><td>{formatAmount(c.amount_minor, c.currency)}</td><td>{c.status}</td>
             </tr>)}</tbody>
@@ -261,14 +261,14 @@ function Statement({ wallet }) {
     const [rows, setRows] = useState(null);
     useEffect(() => { walletApi.statement(wallet.walletRef).then(r => setRows(r.data?.data || [])).catch(() => setRows([])); }, [wallet.walletRef]);
     if (rows === null) return <p>Loading…</p>;
-    if (rows.length === 0) return <p style={{ color: '#5a7a8a' }}>No transactions yet.</p>;
+    if (rows.length === 0) return <p style={{ color: 'var(--text-2)' }}>No transactions yet.</p>;
     return <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
-        <thead><tr style={{ color: '#5a7a8a', textAlign: 'left' }}><th>Date</th><th>What</th><th>With</th><th style={{ textAlign: 'right' }}>Amount</th></tr></thead>
+        <thead><tr style={{ color: 'var(--text-2)', textAlign: 'left' }}><th>Date</th><th>What</th><th>With</th><th style={{ textAlign: 'right' }}>Amount</th></tr></thead>
         <tbody>{rows.map(r => <tr key={r.op_ref + r.kind} style={{ borderTop: '1px solid #eef' }}>
             <td style={{ padding: '6px 0' }}>{when(r.created_at)}</td>
             <td>{KIND[r.kind] || r.kind}</td>
-            <td style={{ color: '#5a7a8a' }}>{r.counterparty || ''}</td>
-            <td style={{ textAlign: 'right', fontWeight: 700, color: r.direction === 'CR' ? '#34AD54' : '#091E3E' }}>
+            <td style={{ color: 'var(--text-2)' }}>{r.counterparty || ''}</td>
+            <td style={{ textAlign: 'right', fontWeight: 700, color: r.direction === 'CR' ? '#34AD54' : 'var(--text)' }}>
                 {r.direction === 'CR' ? '+' : '−'}{formatAmount(r.amount_minor, r.currency)}
             </td>
         </tr>)}</tbody>

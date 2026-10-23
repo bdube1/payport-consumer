@@ -257,6 +257,10 @@ export const walletApi = {
 // unauthenticated (a customer completing a merchant's checkout has no
 // Payport account or token), talking to the public /api/v1/checkout/**
 // endpoints, not the customer transactionsApi above.
+export const assistantApi = {
+    chat: (conversationId, message) => api.post('/api/v1/assistant/chat', { conversationId, message }),
+};
+
 export const checkoutApi = {
     getSession: (sessionId) => api.get(`/api/v1/checkout/${sessionId}`),
     qr: (sessionId) => api.get(`/api/v1/checkout/${sessionId}/qr`),

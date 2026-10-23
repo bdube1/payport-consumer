@@ -262,20 +262,20 @@ export default function Bills() {
 
     return (
         <div style={{ maxWidth: 560, margin: '0 auto', padding: '24px 20px 40px' }}>
-            <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', color: '#5a7a8a', fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 18, padding: 0 }}>← Back</button>
+            <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', color: 'var(--text-2)', fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 18, padding: 0 }}>← Back</button>
 
-            <h1 style={{ fontSize: 22, fontWeight: 800, color: '#091E3E', marginBottom: 4 }}>Pay a Bill</h1>
-            <p style={{ fontSize: 14, color: '#5a7a8a', marginBottom: 28 }}>Fill in the details below — you'll pay once everything's set.</p>
+            <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', marginBottom: 4 }}>Pay a Bill</h1>
+            <p style={{ fontSize: 14, color: 'var(--text-2)', marginBottom: 28 }}>Fill in the details below — you'll pay once everything's set.</p>
 
-            <div style={{ background: 'white', borderRadius: 20, padding: '28px 26px', boxShadow: '0 4px 24px rgba(9,30,62,0.06)', border: '1px solid rgba(6,163,218,0.12)' }}>
+            <div style={{ background: 'var(--bg-card)', borderRadius: 20, padding: '28px 26px', boxShadow: '0 4px 24px rgba(9,30,62,0.06)', border: '1px solid rgba(6,163,218,0.12)' }}>
                 {error && !validatingAccount && (
-                    <div style={{ background: '#fee2e2', border: '1px solid #fecaca', borderRadius: 10, padding: '12px 16px', marginBottom: 20, color: '#dc2626', fontSize: 14 }}>⚠️ {error}</div>
+                    <div style={{ background: 'var(--danger-bg)', border: '1px solid #fecaca', borderRadius: 10, padding: '12px 16px', marginBottom: 20, color: '#dc2626', fontSize: 14 }}>⚠️ {error}</div>
                 )}
 
                 {/* 1. Biller */}
                 <FlowSection title="Select biller" accent="#06A3DA" done={!!biller} summary={biller?.name}>
                     {billers.length === 0 ? (
-                        <div style={{ padding: 30, textAlign: 'center', color: '#5a7a8a', background: '#f8fafc', borderRadius: 12 }}>No billers available at the moment</div>
+                        <div style={{ padding: 30, textAlign: 'center', color: 'var(--text-2)', background: '#f8fafc', borderRadius: 12 }}>No billers available at the moment</div>
                     ) : (
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
                             {billers.map(b => {
@@ -284,7 +284,7 @@ export default function Bills() {
                                     <div key={b.code} onClick={() => setBiller(b)} style={{
                                         padding: '16px 8px', textAlign: 'center', cursor: 'pointer', minHeight: 96,
                                         border: `2px solid ${biller?.code === b.code ? b.color : 'rgba(6,163,218,0.15)'}`, borderRadius: 14,
-                                        background: biller?.code === b.code ? `${b.color}12` : 'white',
+                                        background: biller?.code === b.code ? `${b.color}12` : 'var(--bg-card)',
                                         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                                     }}>
                                         {showLogo ? (
@@ -292,7 +292,7 @@ export default function Bills() {
                                         ) : (
                                             <div style={{ width: 40, height: 40, borderRadius: '50%', background: `${b.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, marginBottom: 6 }}>{getFallbackIcon(b.code)}</div>
                                         )}
-                                        <span style={{ fontWeight: 700, fontSize: 11.5, color: biller?.code === b.code ? b.color : '#091E3E' }}>{b.name}</span>
+                                        <span style={{ fontWeight: 700, fontSize: 11.5, color: biller?.code === b.code ? b.color : 'var(--text)' }}>{b.name}</span>
                                     </div>
                                 );
                             })}
@@ -307,8 +307,8 @@ export default function Bills() {
                             <button key={currency} onClick={() => setSelectedCurrency(currency)} style={{
                                 flex: 1, padding: '12px', borderRadius: 10, fontWeight: 600, fontSize: 14, cursor: 'pointer',
                                 border: `2px solid ${selectedCurrency === currency ? '#06A3DA' : 'rgba(6,163,218,0.2)'}`,
-                                background: selectedCurrency === currency ? 'rgba(6,163,218,0.08)' : 'white',
-                                color: selectedCurrency === currency ? '#06A3DA' : '#5a7a8a',
+                                background: selectedCurrency === currency ? 'rgba(6,163,218,0.08)' : 'var(--bg-card)',
+                                color: selectedCurrency === currency ? '#06A3DA' : 'var(--text-2)',
                             }}>{currency === 'USD' ? '💵' : '🪙'} {currency}</button>
                         ))}
                     </div>
@@ -328,9 +328,9 @@ export default function Bills() {
                 >
                     <input
                         value={account} onChange={e => setAccount(e.target.value)} placeholder={catalogue[biller?.code]?.accountHint || `Enter ${biller?.field}`}
-                        style={{ width: '100%', padding: '14px 18px', border: '2px solid rgba(6,163,218,0.2)', borderRadius: 12, fontSize: 15, outline: 'none', background: '#EEF9FF', marginBottom: 8 }}
+                        style={{ width: '100%', padding: '14px 18px', border: '2px solid rgba(6,163,218,0.2)', borderRadius: 12, fontSize: 15, outline: 'none', background: 'var(--light)', marginBottom: 8 }}
                     />
-                    {validatingAccount && <p style={{ fontSize: 12.5, color: '#5a7a8a' }}>Verifying account...</p>}
+                    {validatingAccount && <p style={{ fontSize: 12.5, color: 'var(--text-2)' }}>Verifying account...</p>}
                     {accountName && !validatingAccount && !error && (
                         <div style={{ padding: '9px 13px', background: 'rgba(52,173,84,0.1)', border: '1px solid rgba(52,173,84,0.3)', borderRadius: 8, fontSize: 13, color: '#34AD54', display: 'flex', alignItems: 'center', gap: 6 }}>
                             <span>✓</span><span style={{ fontWeight: 600 }}>{accountName}</span>
@@ -340,28 +340,28 @@ export default function Bills() {
                     {biller?.code === 'ZESA' && zesaInfo && (
                         <div style={{ background: '#f8f9fa', borderRadius: 12, padding: 18, marginTop: 16, border: '1px solid rgba(6,163,218,0.2)' }}>
                             <div style={{ display: 'grid', gap: 10, fontSize: 13.5 }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#5a7a8a' }}>Meter Number:</span><span style={{ fontWeight: 600, fontFamily: 'monospace' }}>{zesaInfo.meterNumber}</span></div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#5a7a8a' }}>Customer Name:</span><span style={{ fontWeight: 600 }}>{zesaInfo.customerName || 'Not available'}</span></div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text-2)' }}>Meter Number:</span><span style={{ fontWeight: 600, fontFamily: 'monospace' }}>{zesaInfo.meterNumber}</span></div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text-2)' }}>Customer Name:</span><span style={{ fontWeight: 600 }}>{zesaInfo.customerName || 'Not available'}</span></div>
                             </div>
                         </div>
                     )}
 
                     {isNyaradzo && nyaradzoInfo && (
-                        <div style={{ background: '#EEF9FF', borderRadius: 16, padding: 18, marginTop: 16, border: `2px solid ${nyaradzoInfo.isPolicyActive ? 'rgba(52,173,84,0.3)' : 'rgba(220,38,38,0.3)'}` }}>
+                        <div style={{ background: 'var(--light)', borderRadius: 16, padding: 18, marginTop: 16, border: `2px solid ${nyaradzoInfo.isPolicyActive ? 'rgba(52,173,84,0.3)' : 'rgba(220,38,38,0.3)'}` }}>
                             <div style={{ display: 'grid', gap: 8, marginBottom: 16, fontSize: 13.5 }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#5a7a8a' }}>Policy Holder:</span><span style={{ fontWeight: 600 }}>{nyaradzoInfo.holderName}</span></div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text-2)' }}>Policy Holder:</span><span style={{ fontWeight: 600 }}>{nyaradzoInfo.holderName}</span></div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span style={{ color: '#5a7a8a' }}>Status:</span>
+                                    <span style={{ color: 'var(--text-2)' }}>Status:</span>
                                     <span style={{ padding: '2px 10px', borderRadius: 20, fontSize: 11.5, fontWeight: 600, background: nyaradzoInfo.isPolicyActive ? '#e6f7e6' : '#fee2e2', color: nyaradzoInfo.isPolicyActive ? '#2e7d32' : '#c62828' }}>
                                         {nyaradzoInfo.policyStatus || (nyaradzoInfo.isPolicyActive ? 'Active' : 'Lapsed')}
                                     </span>
                                 </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#5a7a8a' }}>Monthly Premium:</span><span style={{ fontWeight: 600 }}>{nyaradzoInfo.currency} {(nyaradzoInfo.monthlyPremiumCents / 100).toFixed(2)}</span></div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text-2)' }}>Monthly Premium:</span><span style={{ fontWeight: 600 }}>{nyaradzoInfo.currency} {(nyaradzoInfo.monthlyPremiumCents / 100).toFixed(2)}</span></div>
                                 {nyaradzoInfo.balanceCents > 0 && (
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#5a7a8a' }}>Outstanding Balance:</span><span style={{ fontWeight: 600, color: '#f59e0b' }}>{nyaradzoInfo.currency} {(nyaradzoInfo.balanceCents / 100).toFixed(2)}</span></div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text-2)' }}>Outstanding Balance:</span><span style={{ fontWeight: 600, color: '#f59e0b' }}>{nyaradzoInfo.currency} {(nyaradzoInfo.balanceCents / 100).toFixed(2)}</span></div>
                                 )}
                             </div>
-                            <label style={{ fontWeight: 700, display: 'block', marginBottom: 10, fontSize: 13.5, color: '#091E3E' }}>How many months would you like to pay?</label>
+                            <label style={{ fontWeight: 700, display: 'block', marginBottom: 10, fontSize: 13.5, color: 'var(--text)' }}>How many months would you like to pay?</label>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                 {[0, 1, 2, 3].map(m => (
                                     <label key={m} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: 13.5 }}>
@@ -378,7 +378,7 @@ export default function Bills() {
                 <FlowSection title={`Amount (${selectedCurrency || 'USD'})`} subtitle={`Min ${selectedCurrency === 'USD' ? '$' : 'ZWG'}${minAmount.toFixed(2)} · Max ${selectedCurrency === 'USD' ? '$' : 'ZWG'}${maxAmount.toFixed(2)}`} show={accountVerified && !isNyaradzo} accent="#06A3DA" done={amountReady} summary={amountReady ? `${selectedCurrency}${parseFloat(amount).toFixed(2)}` : ''}>
                     <input
                         value={amount} onChange={e => setAmount(e.target.value)} type="number" step="0.01" placeholder="0.00"
-                        style={{ width: '100%', padding: '14px 18px', border: `2px solid ${amountError ? '#dc2626' : 'rgba(6,163,218,0.2)'}`, borderRadius: 12, fontSize: 16, outline: 'none', background: '#EEF9FF' }}
+                        style={{ width: '100%', padding: '14px 18px', border: `2px solid ${amountError ? '#dc2626' : 'rgba(6,163,218,0.2)'}`, borderRadius: 12, fontSize: 16, outline: 'none', background: 'var(--light)' }}
                     />
                     {amountError && <p style={{ fontSize: 11.5, color: '#dc2626', marginTop: 6 }}>⚠️ {amountError}</p>}
                 </FlowSection>
@@ -391,15 +391,15 @@ export default function Bills() {
                                 padding: '12px 8px', borderRadius: 12, cursor: 'pointer', textAlign: 'center',
                                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, minHeight: 56,
                                 border: `2px solid ${paymentMethod === m.code ? '#06A3DA' : 'rgba(6,163,218,0.15)'}`,
-                                background: paymentMethod === m.code ? 'rgba(6,163,218,0.08)' : 'white', color: '#091E3E',
+                                background: paymentMethod === m.code ? 'rgba(6,163,218,0.08)' : 'var(--bg-card)', color: 'var(--text)',
                             }}>
                                 <span style={{ fontWeight: 700, fontSize: 12.5, lineHeight: 1.25 }}>{m.name}</span>
                                 {paymentMethod === m.code && <span style={{ color: '#06A3DA', fontSize: 12 }}>✓</span>}
                             </button>
                         ))}
                     </div>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#5a7a8a', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{getPaymentFieldLabel()}</label>
-                    <div style={{ display: 'flex', border: '2px solid rgba(6,163,218,0.2)', borderRadius: 12, overflow: 'hidden', background: '#EEF9FF' }}>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{getPaymentFieldLabel()}</label>
+                    <div style={{ display: 'flex', border: '2px solid rgba(6,163,218,0.2)', borderRadius: 12, overflow: 'hidden', background: 'var(--light)' }}>
                         <div style={{ padding: '14px 16px', background: 'linear-gradient(135deg, #06A3DA, #0487b8)', color: 'white', fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>🇿🇼 +263</div>
                         <input value={phone} onChange={e => { setPhoneTouched(true); setPhone(e.target.value); }} placeholder={getPaymentFieldPlaceholder()} style={{ flex: 1, padding: '14px 16px', border: 'none', background: 'transparent', fontSize: 15, outline: 'none' }} />
                     </div>

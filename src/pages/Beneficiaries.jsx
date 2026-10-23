@@ -4,7 +4,7 @@ import { useAuth } from '../lib/AuthContext';
 import { beneficiariesApi, normalizePhone } from '../lib/api';
 import { fetchActiveBillers } from '../lib/billers';
 
-const C = { primary: '#06A3DA', green: '#34AD54', dark: '#091E3E', accent: '#091E3E', red: '#e53e3e' };
+const C = { primary: '#06A3DA', green: '#34AD54', dark: 'var(--text)', accent: '#091E3E', red: '#e53e3e' };
 
 function detectNetwork(phone) {
     const norm = normalizePhone(phone);

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { assistantApi } from '../../lib/api';
 
 // Same keyword-matched FAQ engine as the website's version — kept as a
 // separate copy since these are two separate apps, but intentionally identical.
@@ -34,21 +35,30 @@ export default function FloatingChat() {
         { from: 'bot', text: "👋 Hi! I'm the Payport assistant. Ask me about airtime, data, bills, or any of our products — or leave a message and the team will follow up." },
     ]);
     const [input, setInput] = useState('');
+    const [conversationId, setConversationId] = useState(null);
+    const [thinking, setThinking] = useState(false);
     const bodyRef = useRef(null);
 
     useEffect(() => {
         if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
     }, [messages, open]);
 
-    const send = (e) => {
+    const send = async (e) => {
         e.preventDefault();
-        if (!input.trim()) return;
+        if (!input.trim() || thinking) return;
         const question = input;
         setMessages(m => [...m, { from: 'user', text: question }]);
         setInput('');
-        setTimeout(() => {
-            setMessages(m => [...m, { from: 'bot', text: getBotReply(question) }]);
-        }, 450);
+        setThinking(true);
+        let reply;
+        try {
+            const r = await assistantApi.chat(conversationId, question);
+            const d = r.data?.data || r.data || {};
+            if (d.conversationId) setConversationId(d.conversationId);
+            reply = d.reply;
+        } catch { /* answered locally below */ }
+        setMessages(m => [...m, { from: 'bot', text: reply || getBotReply(question) }]);
+        setThinking(false);
     };
 
     return (
@@ -92,14 +102,14 @@ export default function FloatingChat() {
 const styles = {
     stack: { position: 'fixed', right: 22, bottom: 96, zIndex: 300, display: 'flex', flexDirection: 'column', gap: 12 },
     floatBtn: { width: 54, height: 54, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 24px rgba(0,0,0,0.22)', border: 'none', cursor: 'pointer' },
-    panel: { position: 'fixed', right: 22, bottom: 164, zIndex: 300, width: 340, maxWidth: 'calc(100vw - 44px)', background: 'white', borderRadius: 18, boxShadow: '0 24px 60px rgba(9,30,62,0.22)', border: '1px solid rgba(6,163,218,0.15)', display: 'flex', flexDirection: 'column', overflow: 'hidden' },
+    panel: { position: 'fixed', right: 22, bottom: 164, zIndex: 300, width: 340, maxWidth: 'calc(100vw - 44px)', background: 'var(--bg-card)', borderRadius: 18, boxShadow: '0 24px 60px rgba(9,30,62,0.22)', border: '1px solid rgba(6,163,218,0.15)', display: 'flex', flexDirection: 'column', overflow: 'hidden' },
     head: { background: '#091E3E', color: 'white', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
     dot: { width: 9, height: 9, borderRadius: '50%', background: '#34D399', boxShadow: '0 0 0 3px rgba(52,211,153,0.25)', display: 'inline-block' },
     title: { fontFamily: 'Rubik, sans-serif', fontWeight: 700, fontSize: 13.5 },
     status: { fontSize: 11, color: 'rgba(255,255,255,0.6)' },
     closeBtn: { background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: 14 },
-    body: { padding: 14, display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 280, overflowY: 'auto', background: '#f4f8fb' },
-    bubble: { background: 'white', border: '1px solid rgba(6,163,218,0.15)', borderRadius: '12px 12px 12px 3px', padding: '10px 13px', fontSize: 13, color: '#091E3E', maxWidth: '88%', lineHeight: 1.5 },
+    body: { padding: 14, display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 280, overflowY: 'auto', background: 'var(--bg-2)' },
+    bubble: { background: 'var(--bg-card)', border: '1px solid rgba(6,163,218,0.15)', borderRadius: '12px 12px 12px 3px', padding: '10px 13px', fontSize: 13, color: 'var(--text)', maxWidth: '88%', lineHeight: 1.5 },
     bubbleUser: { alignSelf: 'flex-end', background: '#06A3DA', color: 'white', borderRadius: '12px 12px 3px 12px', padding: '10px 13px', fontSize: 13, maxWidth: '88%', lineHeight: 1.5 },
     inputRow: { display: 'flex', gap: 8, padding: 12, borderTop: '1px solid rgba(6,163,218,0.12)' },
     input: { flex: 1, border: '1.5px solid rgba(6,163,218,0.2)', borderRadius: 10, padding: '9px 12px', fontSize: 13, outline: 'none', fontFamily: 'Nunito, sans-serif' },

@@ -6,9 +6,9 @@ const C = {
     green:  '#34AD54',
     red:    '#ef4444',
     blue:   '#06A3DA',
-    dark:   '#091E3E',
+    dark:   'var(--text)',
     grey:   '#94b8ca',
-    bgGrey: '#EEF9FF',
+    bgGrey: 'var(--light)',
 };
 
 const STATUS_MAP = {
@@ -131,7 +131,7 @@ function btnStyle(variant) {
     const base = { flex: 1, padding: '14px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', border: 'none' };
     if (variant === 'primary') return { ...base, background: `linear-gradient(135deg, ${C.blue}, #0487b8)`, color: 'white', boxShadow: '0 4px 16px rgba(6,163,218,0.3)' };
     if (variant === 'danger')  return { ...base, background: 'rgba(239,68,68,0.08)', color: '#b91c1c', border: '1.5px solid rgba(239,68,68,0.2)' };
-    return { ...base, background: '#f4f8fb', color: '#5a7a8a', border: '1.5px solid rgba(6,163,218,0.15)' };
+    return { ...base, background: 'var(--bg-2)', color: 'var(--text-2)', border: '1.5px solid rgba(6,163,218,0.15)' };
 }
 
 // Helper to get payment method display name
@@ -299,7 +299,7 @@ export default function Processing() {
     return (
         <div style={{ minHeight: '100vh', background: C.bgGrey, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
             <div style={{ maxWidth: 460, width: '100%' }}>
-                <div style={{ background: 'white', borderRadius: 22, padding: '26px 26px', border: '1.5px solid rgba(6,163,218,0.1)', boxShadow: '0 8px 48px rgba(6,163,218,0.1)', textAlign: 'center' }}>
+                <div style={{ background: 'var(--bg-card)', borderRadius: 22, padding: '26px 26px', border: '1.5px solid rgba(6,163,218,0.1)', boxShadow: '0 8px 48px rgba(6,163,218,0.1)', textAlign: 'center' }}>
 
                     {/* Top icon */}
                     <div style={{
@@ -320,7 +320,7 @@ export default function Processing() {
 
                     {/* Subtitle - empty for payment failed */}
                     {subtitle && (
-                        <p style={{ fontSize: 12.5, lineHeight: 1.5, marginBottom: 6, color: isFailed ? '#b91c1c' : '#5a7a8a', fontWeight: isFailed ? 600 : 400 }}>
+                        <p style={{ fontSize: 12.5, lineHeight: 1.5, marginBottom: 6, color: isFailed ? '#b91c1c' : 'var(--text-2)', fontWeight: isFailed ? 600 : 400 }}>
                             {subtitle}
                         </p>
                     )}
@@ -387,11 +387,20 @@ export default function Processing() {
                         </form>
                     )}
 
+                    {/* InnBucks: the code the customer approves in the InnBucks app */}
+                    {isPending && transaction?.paymentCode && (
+                        <div style={{ background: 'rgba(6,163,218,0.05)', borderRadius: 12, padding: '14px', marginBottom: 14, border: '1.5px solid rgba(6,163,218,0.15)', textAlign: 'center' }}>
+                            <p style={{ fontSize: 12.5, color: 'var(--text-2)', margin: '0 0 6px' }}>Your InnBucks payment code</p>
+                            <div style={{ fontFamily: 'monospace', fontSize: 26, fontWeight: 800, letterSpacing: '0.08em', color: 'var(--text)' }}>{transaction.paymentCode}</div>
+                            <p style={{ fontSize: 12.5, color: 'var(--text-2)', margin: '6px 0 0' }}>Open the InnBucks app and approve this code. This page updates automatically.</p>
+                        </div>
+                    )}
+
                     {/* Pending hint */}
-                    {isPending && !transaction?.requiresOtpEntry && (statusInfo.stepIndex < 2 || isStillChecking) && (
+                    {isPending && !transaction?.requiresOtpEntry && !transaction?.paymentCode && (statusInfo.stepIndex < 2 || isStillChecking) && (
                         <div style={{ background: 'rgba(6,163,218,0.05)', borderRadius: 12, padding: '10px 14px', marginBottom: 14, border: '1.5px solid rgba(6,163,218,0.1)', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10 }}>
                             <div style={{ fontSize: 16, flexShrink: 0 }}>{isStillChecking ? '⏳' : isCardPayment ? '💳' : '📱'}</div>
-                            <p style={{ fontSize: 12.5, color: '#5a7a8a', lineHeight: 1.4, margin: 0 }}>
+                            <p style={{ fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.4, margin: 0 }}>
                                 {isStillChecking
                                     ? 'Your payment was received. We are confirming the delivery with the provider and will send you an SMS.'
                                     : isCardPayment

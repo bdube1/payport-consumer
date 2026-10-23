@@ -195,14 +195,14 @@ export default function Data() {
 
     return (
         <div style={{ maxWidth: 560, margin: '0 auto', padding: '24px 20px 40px' }}>
-            <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', color: '#5a7a8a', fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 18, padding: 0 }}>← Back</button>
+            <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', color: 'var(--text-2)', fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 18, padding: 0 }}>← Back</button>
 
-            <h1 style={{ fontSize: 22, fontWeight: 800, color: '#091E3E', marginBottom: 4 }}>Buy Data</h1>
-            <p style={{ fontSize: 14, color: '#5a7a8a', marginBottom: 28 }}>Fill in the details below — you'll pay once everything's set.</p>
+            <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', marginBottom: 4 }}>Buy Data</h1>
+            <p style={{ fontSize: 14, color: 'var(--text-2)', marginBottom: 28 }}>Fill in the details below — you'll pay once everything's set.</p>
 
-            <div style={{ background: 'white', borderRadius: 20, padding: '28px 26px', boxShadow: '0 4px 24px rgba(9,30,62,0.06)', border: '1px solid rgba(6,163,218,0.12)' }}>
+            <div style={{ background: 'var(--bg-card)', borderRadius: 20, padding: '28px 26px', boxShadow: '0 4px 24px rgba(9,30,62,0.06)', border: '1px solid rgba(6,163,218,0.12)' }}>
                 {error && (
-                    <div style={{ background: '#fee2e2', border: '1px solid #fecaca', borderRadius: 10, padding: '12px 16px', marginBottom: 20, color: '#dc2626', fontSize: 14 }}>⚠️ {error}</div>
+                    <div style={{ background: 'var(--danger-bg)', border: '1px solid #fecaca', borderRadius: 10, padding: '12px 16px', marginBottom: 20, color: '#dc2626', fontSize: 14 }}>⚠️ {error}</div>
                 )}
 
                 {/* 1. Network + currency */}
@@ -214,7 +214,7 @@ export default function Data() {
                                 <div key={n.code} onClick={() => setNetwork(n.code)} style={{
                                     padding: '18px 10px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s', minHeight: 96,
                                     border: `2px solid ${network === n.code ? n.color : 'rgba(6,163,218,0.15)'}`, borderRadius: 14,
-                                    background: network === n.code ? `${n.color}12` : 'white',
+                                    background: network === n.code ? `${n.color}12` : 'var(--bg-card)',
                                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                                 }}>
                                     {showLogo ? (
@@ -222,7 +222,7 @@ export default function Data() {
                                     ) : (
                                         <div style={{ width: 40, height: 40, borderRadius: '50%', background: `${n.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, marginBottom: 6 }}>{getNetworkIcon(n.code)}</div>
                                     )}
-                                    <span style={{ fontSize: 12, fontWeight: 700, color: network === n.code ? n.color : '#091E3E' }}>{n.name}</span>
+                                    <span style={{ fontSize: 12, fontWeight: 700, color: network === n.code ? n.color : 'var(--text)' }}>{n.name}</span>
                                 </div>
                             );
                         })}
@@ -234,8 +234,8 @@ export default function Data() {
                                 <button key={ccy.currency} onClick={() => setSelectedCurrency(ccy.currency)} style={{
                                     flex: 1, padding: '12px', borderRadius: 10, fontWeight: 600, fontSize: 14, cursor: 'pointer',
                                     border: `2px solid ${selectedCurrency === ccy.currency ? '#06A3DA' : 'rgba(6,163,218,0.2)'}`,
-                                    background: selectedCurrency === ccy.currency ? 'rgba(6,163,218,0.1)' : 'white',
-                                    color: selectedCurrency === ccy.currency ? '#06A3DA' : '#5a7a8a',
+                                    background: selectedCurrency === ccy.currency ? 'rgba(6,163,218,0.1)' : 'var(--bg-card)',
+                                    color: selectedCurrency === ccy.currency ? '#06A3DA' : 'var(--text-2)',
                                 }}>{ccy.label || ccy.currency}</button>
                             ))}
                         </div>
@@ -244,7 +244,7 @@ export default function Data() {
 
                 {/* 2. Recipient */}
                 <FlowSection title="Recipient number" accent="#06A3DA" show={!!selectedCurrency} done={isValidRecipient} summary={isValidRecipient ? normalizePhone(recipientPhone) : ''}>
-                    <div style={{ display: 'flex', border: `2px solid ${isValidRecipient ? 'rgba(52,173,84,0.5)' : detectedNetwork && !isValidRecipient ? '#dc2626' : 'rgba(6,163,218,0.2)'}`, borderRadius: 12, overflow: 'hidden', background: '#EEF9FF' }}>
+                    <div style={{ display: 'flex', border: `2px solid ${isValidRecipient ? 'rgba(52,173,84,0.5)' : detectedNetwork && !isValidRecipient ? '#dc2626' : 'rgba(6,163,218,0.2)'}`, borderRadius: 12, overflow: 'hidden', background: 'var(--light)' }}>
                         <div style={{ padding: '14px 16px', background: 'linear-gradient(135deg, #06A3DA, #0487b8)', color: 'white', fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>🇿🇼 +263</div>
                         <input value={recipientPhone} onChange={e => setRecipientPhone(e.target.value)} placeholder="077 123 4567" style={{ flex: 1, padding: '14px 16px', border: 'none', background: 'transparent', fontSize: 15, outline: 'none' }} />
                         {networkLoading && <div style={{ padding: '14px 16px' }}><div style={{ width: 20, height: 20, border: '2px solid rgba(6,163,218,0.2)', borderTop: '2px solid #06A3DA', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /></div>}
@@ -261,8 +261,8 @@ export default function Data() {
                                 <button key={cat} onClick={() => { setSelectedCategory(cat); setBundle(null); }} style={{
                                     padding: '7px 14px', borderRadius: 20, fontSize: 12.5, cursor: 'pointer',
                                     border: `1px solid ${selectedCategory === cat ? '#06A3DA' : 'rgba(6,163,218,0.2)'}`,
-                                    background: selectedCategory === cat ? 'rgba(6,163,218,0.1)' : 'white',
-                                    color: selectedCategory === cat ? '#06A3DA' : '#5a7a8a', fontWeight: selectedCategory === cat ? 700 : 500,
+                                    background: selectedCategory === cat ? 'rgba(6,163,218,0.1)' : 'var(--bg-card)',
+                                    color: selectedCategory === cat ? '#06A3DA' : 'var(--text-2)', fontWeight: selectedCategory === cat ? 700 : 500,
                                 }}>{cat}</button>
                             ))}
                         </div>
@@ -270,7 +270,7 @@ export default function Data() {
                     {bundlesLoading ? (
                         <div style={{ textAlign: 'center', padding: 20 }}>
                             <div style={{ width: 26, height: 26, border: '2px solid rgba(6,163,218,0.2)', borderTop: '2px solid #06A3DA', borderRadius: '50%', animation: 'spin 0.7s linear infinite', margin: '0 auto 8px' }} />
-                            <p style={{ color: '#5a7a8a', fontSize: 13 }}>Loading bundles...</p>
+                            <p style={{ color: 'var(--text-2)', fontSize: 13 }}>Loading bundles...</p>
                         </div>
                     ) : filteredBundles.length === 0 ? (
                         <div style={{ padding: 18, background: '#fff3cd', color: '#856404', borderRadius: 8, textAlign: 'center', fontSize: 13.5 }}>No bundles available</div>
@@ -280,10 +280,10 @@ export default function Data() {
                                 <div key={b.bundleCode || i} onClick={() => setBundle(b)} style={{
                                     padding: '13px 16px', borderRadius: 10, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                                     border: `2px solid ${bundle?.bundleCode === b.bundleCode ? '#06A3DA' : 'rgba(6,163,218,0.12)'}`,
-                                    background: bundle?.bundleCode === b.bundleCode ? 'rgba(6,163,218,0.06)' : 'white',
+                                    background: bundle?.bundleCode === b.bundleCode ? 'rgba(6,163,218,0.06)' : 'var(--bg-card)',
                                 }}>
-                                    <span style={{ fontWeight: bundle?.bundleCode === b.bundleCode ? 700 : 500, color: bundle?.bundleCode === b.bundleCode ? '#06A3DA' : '#091E3E', fontSize: 14 }}>{b.name}</span>
-                                    <span style={{ fontWeight: 700, color: bundle?.bundleCode === b.bundleCode ? '#06A3DA' : '#091E3E', fontSize: 14 }}>{formatAmount(b.amountCents, selectedCurrency)}</span>
+                                    <span style={{ fontWeight: bundle?.bundleCode === b.bundleCode ? 700 : 500, color: bundle?.bundleCode === b.bundleCode ? '#06A3DA' : 'var(--text)', fontSize: 14 }}>{b.name}</span>
+                                    <span style={{ fontWeight: 700, color: bundle?.bundleCode === b.bundleCode ? '#06A3DA' : 'var(--text)', fontSize: 14 }}>{formatAmount(b.amountCents, selectedCurrency)}</span>
                                 </div>
                             ))}
                         </div>
@@ -298,15 +298,15 @@ export default function Data() {
                                 padding: '12px 8px', borderRadius: 12, cursor: 'pointer', textAlign: 'center',
                                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, minHeight: 56,
                                 border: `2px solid ${paymentMethod === m.code ? '#06A3DA' : 'rgba(6,163,218,0.15)'}`,
-                                background: paymentMethod === m.code ? 'rgba(6,163,218,0.08)' : 'white', color: '#091E3E',
+                                background: paymentMethod === m.code ? 'rgba(6,163,218,0.08)' : 'var(--bg-card)', color: 'var(--text)',
                             }}>
                                 <span style={{ fontWeight: 700, fontSize: 12.5, lineHeight: 1.25 }}>{m.name}</span>
                                 {paymentMethod === m.code && <span style={{ color: '#06A3DA', fontSize: 12 }}>✓</span>}
                             </button>
                         ))}
                     </div>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#5a7a8a', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{getPaymentFieldLabel()}</label>
-                    <div style={{ display: 'flex', border: '2px solid rgba(6,163,218,0.2)', borderRadius: 12, overflow: 'hidden', background: '#EEF9FF' }}>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{getPaymentFieldLabel()}</label>
+                    <div style={{ display: 'flex', border: '2px solid rgba(6,163,218,0.2)', borderRadius: 12, overflow: 'hidden', background: 'var(--light)' }}>
                         <div style={{ padding: '14px 16px', background: 'linear-gradient(135deg, #06A3DA, #0487b8)', color: 'white', fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>🇿🇼 +263</div>
                         <input value={paymentIdentifier} onChange={e => { setPaymentIdentifierTouched(true); setPaymentIdentifier(e.target.value); }} placeholder={getPaymentFieldPlaceholder()} style={{ flex: 1, padding: '14px 16px', border: 'none', background: 'transparent', fontSize: 15, outline: 'none' }} />
                     </div>
