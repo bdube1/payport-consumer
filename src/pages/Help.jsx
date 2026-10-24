@@ -1,3 +1,5 @@
+import { useAuth } from '../lib/AuthContext';
+import { BackBar } from '../components/shell/AppShell';
 import { useState } from 'react';
 
 const FAQS = [
@@ -16,6 +18,7 @@ const FAQS = [
 const CATS = ['All', ...new Set(FAQS.map(f => f.cat))];
 
 export default function Help() {
+    const { user } = useAuth();
   const [activecat, setActiveCat] = useState('All');
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(null);
@@ -26,10 +29,11 @@ export default function Help() {
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--light)', paddingTop: 100 }}>
+    <div style={user ? { maxWidth: 980 } : { minHeight: '100vh', background: 'var(--light)', paddingTop: 100 }}>
+      {user && <BackBar title="Help" />}
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(160deg, #0B1024, #0E1430)', padding: '60px 24px', textAlign: 'center', marginBottom: 0 }}>
-        <h1 style={{ fontSize: 40, fontWeight: 800, color: 'white', letterSpacing: '-0.03em', marginBottom: 12 }}>How can we help?</h1>
+      <div style={{ background: user ? 'linear-gradient(110deg, #0C4A86 0%, #0F5E98 45%, #1E8AA6 78%, #3FB59A 100%)' : 'linear-gradient(160deg, #0B1024, #0E1430)', padding: user ? '34px 24px' : '60px 24px', textAlign: 'center', marginBottom: 0, borderRadius: user ? 18 : 0 }}>
+        <h1 style={{ fontSize: user ? 30 : 40, fontWeight: 800, color: 'white', letterSpacing: '-0.03em', marginBottom: 12 }}>How can we help?</h1>
         <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 16, marginBottom: 32 }}>Search our FAQ or browse by category</p>
         <div style={{ maxWidth: 480, margin: '0 auto', position: 'relative' }}>
           <span style={{ position: 'absolute', left: 18, top: '50%', transform: 'translateY(-50%)', fontSize: 18 }}>🔍</span>
@@ -42,7 +46,7 @@ export default function Help() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 760, margin: '0 auto', padding: '48px 24px 80px' }}>
+      <div style={user ? { padding: '24px 0 40px' } : { maxWidth: 760, margin: '0 auto', padding: '48px 24px 80px' }}>
         {/* Category filter */}
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 36 }}>
           {CATS.map(cat => (

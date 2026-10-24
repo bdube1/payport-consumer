@@ -1,3 +1,4 @@
+import { BackBar } from '../components/shell/AppShell';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
@@ -44,8 +45,8 @@ export default function Account() {
     };
 
     return (
-        <div style={{ maxWidth: 460, margin: '0 auto', padding: '40px 20px' }}>
-            <h1 style={{ fontSize: 24, fontWeight: 800, color: C.dark, marginBottom: 4 }}>Account</h1>
+        <div style={{ maxWidth: 720 }}>
+            <BackBar title="Profile" />
             <p style={{ color: '#5b6b82', fontSize: 14, marginBottom: 28 }}>{user.fullName} · {user.phone}</p>
 
             <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: 28, boxShadow: '0 2px 20px rgba(6,163,218,0.08)', border: `1px solid ${C.primary}15` }}>

@@ -112,8 +112,8 @@ function WalletPick({ wallets, value, onChange }) {
                     border: `2px solid ${w.walletRef === value ? C.primary : 'rgba(6,163,218,0.2)'}`,
                     background: w.walletRef === value ? 'rgba(6,163,218,0.08)' : 'var(--bg-card)', color: 'var(--text)',
                 }}>
-                    <div style={{ fontSize: 12, color: 'var(--text-2)', fontWeight: 700 }}>{w.currency}</div>
-                    <div style={{ fontSize: 17, fontWeight: 800 }}>{formatAmount(w.balanceMinor, w.currency)}</div>
+                    <div style={{ fontSize: 16, fontWeight: 800 }}>{w.currency} wallet</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-2)' }}>{w.walletRef}</div>
                 </button>
             ))}
         </div>
@@ -246,9 +246,7 @@ function useCharge(product, wallet, cents) {
 
 function ChargeLine({ charge, currency }) {
     if (!charge || !(charge.chargeMinor || charge.taxMinor)) return null;
-    return <div style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 8 }}>
-        Charge {formatAmount(charge.chargeMinor, currency)}{charge.taxMinor ? ` + tax ${formatAmount(charge.taxMinor, currency)}` : ''} · Total {formatAmount(charge.totalMinor, currency)}
-    </div>;
+    return <div style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 8 }}>Total {formatAmount(charge.totalMinor, currency)}</div>;
 }
 
 const codeInput = { ...input, fontSize: 22, letterSpacing: 6, textAlign: 'center', fontFamily: 'monospace' };
@@ -320,7 +318,15 @@ function PayMerchant({ wallet, busy, run, setError }) {
                 </button>
             ))}
         </div>
-        {mode === 'scan' && <QrScan onCode={(c) => { setMode('code'); setCode(c); find(c); }} onError={(m) => setError(m)} />}
+        {mode === 'scan' && <QrScan onError={(m) => setError(m)} onCode={async (payload) => {
+            setMode('code'); setError('');
+            try {
+                const r = await walletApi.scan(payload);
+                const d = r.data?.data || {};
+                if (d.type !== 'MERCHANT') { setError('That is not a merchant QR code.'); return; }
+                setCode(d.code); setMerchant(d);
+            } catch (e) { setError(msg(e, 'This QR code is not valid.')); }
+        }} />}
         {mode === 'code' && <>
             <span style={label}>Merchant code</span>
             <input style={codeInput} value={code} onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" placeholder="000000" />

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import api, { walletApi, formatAmount, isLoggedIn } from './api';
+import api, { walletApi, isLoggedIn } from './api';
 
 /** The customer charge for a product payment (Limits & Charges), shown before paying. */
 export function useCharge(product, currency, amountCents) {
@@ -30,17 +30,10 @@ export function useWalletBalances() {
     return b;
 }
 
-/** "PayPort Wallet · USD 12.00" for the wallet option. */
-export function methodLabel(m, balances, currency) {
+/** The option's name ("PayPort Wallet" for the wallet; balances are shown only on the home page). */
+export function methodLabel(m) {
     if (!m) return '';
-    if (m.code !== 'WALLET') return m.name;
-    return `PayPort Wallet${currency && balances[currency] != null ? ` · ${formatAmount(balances[currency], currency)}` : ''}`;
+    return m.code === 'WALLET' ? 'PayPort Wallet' : m.name;
 }
 
-/** Amount / charge / tax rows for the confirmation, when a charge applies. */
-export function chargeRows(q, amountCents, currency) {
-    if (!q || !(q.chargeCents || q.taxCents)) return [];
-    const rows = [['Amount', formatAmount(amountCents, currency)], ['Charge', formatAmount(q.chargeCents, currency)]];
-    if (q.taxCents) rows.push(['Tax', formatAmount(q.taxCents, currency)]);
-    return rows;
-}
+
