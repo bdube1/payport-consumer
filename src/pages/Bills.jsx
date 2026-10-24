@@ -5,6 +5,7 @@ import WalletPin from '../components/flow/WalletPin';
 import { getFallbackIcon, getBillerColor, getFieldName, getMerchantCode } from '../lib/billers';
 import FlowSection from '../components/flow/FlowSection';
 import ConfirmModal from '../components/flow/ConfirmModal';
+import { useCharge, useWalletBalances, methodLabel, chargeRows } from '../lib/charges';
 
 const PAYMENT_METHODS = [
     { code: 'ECOCASH', name: 'EcoCash' }, { code: 'ONEMONEY', name: 'OneMoney' },
@@ -231,6 +232,8 @@ export default function Bills() {
     const totalAmount = isNyaradzo ? calculateNyaradzoAmount() : (parseFloat(amount) || 0);
     const totalCurrency = isNyaradzo ? (nyaradzoInfo?.currency || 'USD') : (selectedCurrency || 'USD');
 
+    const quote = useCharge(biller?.productCode, totalCurrency, Math.round(totalAmount * 100));
+    const balances = useWalletBalances();
     const handlePay = async () => {
         if (!canPay) return;
         setLoading(true); setError('');
@@ -393,7 +396,7 @@ export default function Bills() {
                                 border: `2px solid ${paymentMethod === m.code ? '#06A3DA' : 'rgba(6,163,218,0.15)'}`,
                                 background: paymentMethod === m.code ? 'rgba(6,163,218,0.08)' : 'var(--bg-card)', color: 'var(--text)',
                             }}>
-                                <span style={{ fontWeight: 700, fontSize: 12.5, lineHeight: 1.25 }}>{m.name}</span>
+                                <span style={{ fontWeight: 700, fontSize: 12.5, lineHeight: 1.25 }}>{methodLabel(m, balances, totalCurrency)}</span>
                                 {paymentMethod === m.code && <span style={{ color: '#06A3DA', fontSize: 12 }}>✓</span>}
                             </button>
                         ))}
@@ -421,13 +424,14 @@ export default function Bills() {
                 onClose={() => setConfirmOpen(false)}
                 onConfirm={handlePay}
                 loading={loading}
-                total={formatAmount(Math.round(totalAmount * 100), totalCurrency)}
+                total={quote ? formatAmount(quote.totalCents, totalCurrency) : formatAmount(Math.round(totalAmount * 100), totalCurrency)}
                 rows={[
                     ['Biller', biller?.name],
                     [biller?.field, account],
                     accountName ? ['Account name', accountName] : null,
                     isNyaradzo ? ['Months', selectedMonths === 0 ? 'Balance only' : `Balance + ${selectedMonths}`] : null,
-                    ['Payment via', pm?.name || paymentMethod],
+                    ...chargeRows(quote, Math.round(totalAmount * 100), totalCurrency),
+                    ['Payment via', methodLabel(pm, balances, totalCurrency) || paymentMethod],
                     [getPaymentFieldLabel(), normalizePhone(phone)],
                 ]}
             />
