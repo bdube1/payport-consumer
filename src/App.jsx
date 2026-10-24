@@ -19,6 +19,7 @@ import Beneficiaries from './pages/Beneficiaries';
 import Account from './pages/Account';
 import ZimSwitchWidget from './pages/ZimSwitchWidget';
 import Wallet from './pages/Wallet';
+import Dashboard from './pages/Dashboard';
 
 function Layout({ children }) {
     return (
@@ -28,6 +29,11 @@ function Layout({ children }) {
             <Footer />
         </>
     );
+}
+
+function HomeRoute() {
+    const { user } = useAuth();
+    return user ? <Dashboard /> : <Home />;
 }
 
 function PrivateRoute({ children }) {
@@ -40,7 +46,7 @@ export default function App() {
         <AuthProvider>
             <BrowserRouter>
                 <Routes>
-                    <Route path="/" element={<Layout><Home /></Layout>} />
+                    <Route path="/" element={<Layout><HomeRoute /></Layout>} />
                     <Route path="/checkout/:sessionId" element={<Checkout />} />
                     <Route path="/pay/:slug" element={<PaymentLink />} />
                     <Route path="/airtime" element={<Layout><Airtime /></Layout>} />

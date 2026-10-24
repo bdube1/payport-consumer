@@ -18,13 +18,17 @@ export default function Navbar() {
         setMenuOpen(false);
     };
 
-    const navLinks = [
+    const navLinks = user ? [
+        { to: '/', label: 'Home' },
+        { to: '/history', label: 'History' },
+        { to: '/beneficiaries', label: 'Contacts' },
+        { to: '/account', label: 'Profile' },
+    ] : [
         { to: '/', label: 'Home' },
         { to: '/airtime', label: 'Airtime' },
         { to: '/data', label: 'Data' },
         { to: '/bills', label: 'Bills' },
         { to: '/status', label: 'Track Order' },
-        ...(user ? [{ to: '/wallet', label: 'Wallet' }, { to: '/history', label: 'My History' }, { to: '/beneficiaries', label: 'Beneficiaries' }, { to: '/account', label: 'Account' }] : []),
         { to: '/help', label: 'Help' },
     ];
 

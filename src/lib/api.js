@@ -68,6 +68,7 @@ api.interceptors.request.use(cfg => {
     if (token) {
         cfg.headers.Authorization = `Bearer ${token}`;
     }
+    cfg.headers['X-PayPort-Channel'] = 'WEB';
     const txToken = transactionToken(referenceOf(cfg));
     if (txToken) cfg.headers['X-Transaction-Token'] = txToken;
     return cfg;
@@ -223,9 +224,11 @@ export async function startPayment(initiatePayload, payPayload) {
     return paid.data?.data || paid.data;
 }
 
-/** The PayPort wallet is offered only to a signed-in customer. */
+/** The PayPort wallet is offered only to a signed-in customer, and comes first (the default) for them. */
 export function visibleMethods(methods) {
-    return isLoggedIn() ? methods : methods.filter(m => m.code !== 'WALLET');
+    return isLoggedIn()
+        ? methods.map(m => (m.code === 'WALLET' ? { ...m, displayOrder: -1000 } : m))
+        : methods.filter(m => m.code !== 'WALLET');
 }
 
 // ===== WALLET (Phase 8; switched on by PayPort when licensed) =====
@@ -249,8 +252,15 @@ export const walletApi = {
     payCheckout: (sessionId, pin) => api.post('/api/v1/wallet/pay-checkout', { sessionId: Number(sessionId), pin }),
     quote: (from, to, amountMinor) => api.post('/api/v1/wallet/fx/quotes', { from, to, amountMinor }),
     convert: (quoteRef, pin) => api.post('/api/v1/wallet/fx/conversions', { quoteRef, pin }),
-    cashOutCode: (currency, amountMinor, pin) => api.post('/api/v1/wallet/cash-out-codes', { currency, amountMinor, pin }),
-    cashOutCodes: () => api.get('/api/v1/wallet/cash-out-codes'),
+    agent: (code) => api.get(`/api/v1/wallet/agents/${encodeURIComponent(code)}`),
+    cashOut: (agentCode, currency, amountMinor, pin, clientRef) => api.post('/api/v1/wallet/cash-out', { agentCode, currency, amountMinor, pin, clientRef }),
+    merchant: (code) => api.get(`/api/v1/wallet/merchants/${encodeURIComponent(code)}`),
+    payMerchant: (merchantCode, currency, amountMinor, pin, description) => api.post('/api/v1/wallet/pay-merchant', { merchantCode, currency, amountMinor, pin, description }),
+    charges: (product, currency, amountMinor) => api.get('/api/v1/wallet/charges', { params: { product, currency, amountMinor } }),
+    cards: () => api.get('/api/v1/wallet/cards'),
+    requestCard: (body) => api.post('/api/v1/wallet/cards', body),
+    cardAction: (ref, action, pin) => api.post(`/api/v1/wallet/cards/${encodeURIComponent(ref)}/action`, { action, pin }),
+    refreshCard: (ref) => api.post(`/api/v1/wallet/cards/${encodeURIComponent(ref)}/refresh`),
 };
 
 // Merchants Module, Phase 1 -- the hosted checkout page. Deliberately
