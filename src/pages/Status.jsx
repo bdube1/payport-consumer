@@ -1,3 +1,5 @@
+import { useAuth } from '../lib/AuthContext';
+import { BackBar } from '../components/shell/AppShell';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { transactionsApi, formatAmount } from '../lib/api';
@@ -99,6 +101,7 @@ const maskPhone = (phone) => {
 };
 
 export default function Status() {
+    const { user } = useAuth();
     const { ref: urlRef } = useParams();
     const navigate = useNavigate();
     const [query, setQuery] = useState(urlRef || '');
@@ -133,9 +136,10 @@ export default function Status() {
     const cfg = transaction ? (STATUS_CONFIG[transaction.status] || STATUS_CONFIG.INITIATED) : null;
 
     return (
-        <div style={{ minHeight: '100vh', background: 'var(--light)', paddingTop: 100 }}>
-            <div style={{ maxWidth: 680, margin: '0 auto', padding: '0 24px 80px' }}>
-                <div style={{ textAlign: 'center', marginBottom: 40 }}>
+        <div style={user ? {} : { minHeight: '100vh', background: 'var(--light)', paddingTop: 100 }}>
+            <div style={user ? { maxWidth: 820 } : { maxWidth: 680, margin: '0 auto', padding: '0 24px 80px' }}>
+                {user && <BackBar title="Track order" />}
+                <div style={{ textAlign: 'center', marginBottom: 40, display: user ? 'none' : 'block' }}>
                     <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
                     <h1 style={{ fontSize: 32, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 8 }}>Track Order</h1>
                     <p style={{ color: 'var(--text-2)', fontSize: 15 }}>Enter your reference number to check status</p>

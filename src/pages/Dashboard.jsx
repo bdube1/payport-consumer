@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
-import { walletApi } from '../lib/api';
+import { walletApi, transactionsApi, formatAmount } from '../lib/api';
 import Icon from '../components/shell/Icons';
 
 const SERVICES = [
@@ -74,14 +74,7 @@ export default function Dashboard() {
                     ))}
                 </div>
 
-                <div className="pp-helpbar">
-                    <span className="pp-infoi"><Icon name="info" size={26} /></span>
-                    <span>
-                        <b>Need help?</b>
-                        <p>We're here for you. <Link to="/help">Visit</Link> our support centre for FAQs, policies and more.</p>
-                    </span>
-                    <Link to="/help" className="pp-getsupport">Get support <Icon name="chevronRight" size={16} /></Link>
-                </div>
+                <RecentTransactions />
             </div>
 
             <aside className="pp-aside">
@@ -102,6 +95,56 @@ export default function Dashboard() {
                     {!state.loading && wallets.length === 0 && <p style={{ color: 'var(--text-2)', fontSize: 14 }}>No wallet yet.</p>}
                 </div>
             </aside>
+        </div>
+    );
+}
+
+const KIND = { TOPUP: 'Wallet top-up', PAYMENT: 'Payment', P2P_OUT: 'Money sent', P2P_IN: 'Money received', CASH_IN: 'Cash in', CASH_OUT: 'Cash out', FX_OUT: 'Converted', FX_IN: 'Converted', REFUND: 'Refund' };
+const STATUS = { COMPLETED: 'Completed', PAYMENT_PENDING: 'Pending', FULFILMENT_PENDING: 'Processing', PAYMENT_CONFIRMED: 'Processing', PAYMENT_FAILED: 'Failed',
+    FULFILMENT_FAILED: 'Failed', PAYMENT_TIMEOUT: 'Timed out', REFUNDED: 'Refunded', REFUND_PENDING: 'Refund pending', CANCELLED: 'Cancelled', INITIATED: 'Started', MANUAL_FULFILMENT: 'Being checked' };
+const time = (v) => { const t = Array.isArray(v) ? new Date(v[0], v[1] - 1, v[2], v[3] || 0, v[4] || 0) : new Date(String(v).replace(' ', 'T')); return Number.isNaN(t.getTime()) ? 0 : t.getTime(); };
+const when = (ms) => ms ? new Date(ms).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+
+/** The five most recent transactions (payments and wallet activity), newest first. */
+function RecentTransactions() {
+    const [rows, setRows] = useState(null);
+    useEffect(() => {
+        (async () => {
+            const out = [];
+            try {
+                const r = await transactionsApi.getMyHistory(0, 5);
+                const d = r.data?.data || r.data || {};
+                for (const t of (d.content || (Array.isArray(d) ? d : []))) {
+                    if ((t.productTypeCode || '').startsWith('WALLET')) continue;
+                    out.push({ key: 'p' + t.reference, at: time(t.createdAt || t.initiatedAt), title: t.productName || 'Payment', sub: t.recipientIdentifier,
+                        amount: formatAmount(t.totalCents ?? t.amountCents, t.currency), out: true, status: STATUS[t.status] || t.status, to: `/history` });
+                }
+            } catch { /* none */ }
+            try {
+                const w = await walletApi.list();
+                const ws = w.data?.data?.wallets || [];
+                const all = await Promise.all(ws.map(x => walletApi.statement(x.walletRef, 5).then(s => s.data?.data || []).catch(() => [])));
+                for (const o of all.flat()) {
+                    out.push({ key: 'w' + o.op_ref + o.kind, at: time(o.created_at), title: KIND[o.kind] || o.kind, sub: o.counterparty,
+                        amount: `${o.direction === 'CR' ? '+' : '−'}${formatAmount(o.amount_minor, o.currency)}`, out: o.direction !== 'CR', to: '/history?tab=wallet' });
+                }
+            } catch { /* none */ }
+            out.sort((a, b) => b.at - a.at);
+            setRows(out.slice(0, 5));
+        })();
+    }, []);
+    return (
+        <div className="pp-recent">
+            <div className="pp-recent-head"><b>Recent transactions</b><Link to="/history">View all <Icon name="chevronRight" size={14} /></Link></div>
+            {rows === null && <p className="pp-recent-empty">Loading…</p>}
+            {rows && rows.length === 0 && <p className="pp-recent-empty">No transactions yet.</p>}
+            {(rows || []).map(r => (
+                <Link key={r.key} to={r.to} className="pp-recent-row">
+                    <span className={`pp-recent-ic ${r.out ? 'out' : 'in'}`}><Icon name={r.out ? 'send' : 'topup'} size={18} /></span>
+                    <span className="pp-recent-main"><b>{r.title}</b><small>{[r.sub, when(r.at)].filter(Boolean).join(' · ')}</small></span>
+                    <span className="pp-recent-amt"><b className={r.out ? '' : 'in'}>{r.amount}</b>{r.status && <small>{r.status}</small>}</span>
+                </Link>
+            ))}
         </div>
     );
 }

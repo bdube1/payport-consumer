@@ -78,6 +78,9 @@ function AddCard({ form, options, onClose, onDone }) {
     const [error, setError] = useState('');
     useEffect(() => { walletApi.list().then(r => { const w = r.data?.data?.wallets || []; setWallets(w); setWalletRef(w[0]?.walletRef || ''); }).catch(() => {}); }, []);
     const schemes = (options?.schemes || [{ scheme: 'VISA' }, { scheme: 'ZIMSWITCH' }]).map(x => x.scheme);
+    // ZimSwitch cards are linked to a ZWG wallet.
+    const usable = wallets.filter(w => scheme !== 'ZIMSWITCH' || w.currency === 'ZWG');
+    useEffect(() => { if (!usable.some(w => w.walletRef === walletRef)) setWalletRef(usable[0]?.walletRef || ''); }, [scheme, wallets.length]); // eslint-disable-line react-hooks/exhaustive-deps
     const ok = walletRef && nickname.trim() && pin.length >= 4 && (form === 'VIRTUAL' || address.trim().length >= 5) && !busy;
     const submit = async () => {
         setBusy(true); setError('');
@@ -91,7 +94,7 @@ function AddCard({ form, options, onClose, onDone }) {
                 <h3 style={{ margin: 0, color: 'var(--text)' }}>New {form === 'VIRTUAL' ? 'virtual' : 'physical'} card</h3>
                 {error && <p style={{ color: '#e53e3e', margin: '10px 0 0' }}>{error}</p>}
                 <label style={lbl}>Wallet</label>
-                <select style={input} value={walletRef} onChange={e => setWalletRef(e.target.value)}>{wallets.map(w => <option key={w.walletRef} value={w.walletRef}>{w.currency} · {w.walletRef}</option>)}</select>
+                <select style={input} value={walletRef} onChange={e => setWalletRef(e.target.value)}>{usable.map(w => <option key={w.walletRef} value={w.walletRef}>{w.currency} · {w.walletRef}</option>)}</select>
                 <label style={lbl}>Card</label>
                 <select style={input} value={scheme} onChange={e => setScheme(e.target.value)}>{schemes.map(s => <option key={s} value={s}>{s === 'ZIMSWITCH' ? 'ZimSwitch' : 'VISA'}</option>)}</select>
                 <label style={lbl}>Nickname</label>

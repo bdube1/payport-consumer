@@ -1,3 +1,5 @@
+import { useAuth } from '../lib/AuthContext';
+import { BackBar } from '../components/shell/AppShell';
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { productsApi, billersApi, startPayment, paymentError, normalizePhone, generateReference, formatAmount, BASE, visibleMethods } from '../lib/api';
@@ -5,7 +7,7 @@ import WalletPin from '../components/flow/WalletPin';
 import { getFallbackIcon, getBillerColor, getFieldName, getMerchantCode } from '../lib/billers';
 import FlowSection from '../components/flow/FlowSection';
 import ConfirmModal from '../components/flow/ConfirmModal';
-import { useCharge, useWalletBalances, methodLabel, chargeRows } from '../lib/charges';
+import { useCharge, methodLabel } from '../lib/charges';
 
 const PAYMENT_METHODS = [
     { code: 'ECOCASH', name: 'EcoCash' }, { code: 'ONEMONEY', name: 'OneMoney' },
@@ -17,6 +19,7 @@ const MOBILE_MONEY = ['ECOCASH', 'ONEMONEY', 'TELECASH', 'OMARI'];
 
 
 export default function Bills() {
+    const { user } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const [billers, setBillers] = useState([]);
@@ -233,7 +236,6 @@ export default function Bills() {
     const totalCurrency = isNyaradzo ? (nyaradzoInfo?.currency || 'USD') : (selectedCurrency || 'USD');
 
     const quote = useCharge(biller?.productCode, totalCurrency, Math.round(totalAmount * 100));
-    const balances = useWalletBalances();
     const handlePay = async () => {
         if (!canPay) return;
         setLoading(true); setError('');
@@ -264,11 +266,13 @@ export default function Bills() {
     const pm = paymentMethods.find(m => m.code === paymentMethod);
 
     return (
-        <div style={{ maxWidth: 560, margin: '0 auto', padding: '24px 20px 40px' }}>
+        <div style={user ? { maxWidth: 820 } : { maxWidth: 560, margin: '0 auto', padding: '24px 20px 40px' }}>
+            {user ? <BackBar title="Bills" /> : <>
             <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', color: 'var(--text-2)', fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 18, padding: 0 }}>← Back</button>
 
             <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', marginBottom: 4 }}>Pay a Bill</h1>
             <p style={{ fontSize: 14, color: 'var(--text-2)', marginBottom: 28 }}>Fill in the details below — you'll pay once everything's set.</p>
+            </>}
 
             <div style={{ background: 'var(--bg-card)', borderRadius: 20, padding: '28px 26px', boxShadow: '0 4px 24px rgba(9,30,62,0.06)', border: '1px solid rgba(6,163,218,0.12)' }}>
                 {error && !validatingAccount && (
@@ -396,7 +400,7 @@ export default function Bills() {
                                 border: `2px solid ${paymentMethod === m.code ? '#06A3DA' : 'rgba(6,163,218,0.15)'}`,
                                 background: paymentMethod === m.code ? 'rgba(6,163,218,0.08)' : 'var(--bg-card)', color: 'var(--text)',
                             }}>
-                                <span style={{ fontWeight: 700, fontSize: 12.5, lineHeight: 1.25 }}>{methodLabel(m, balances, totalCurrency)}</span>
+                                <span style={{ fontWeight: 700, fontSize: 12.5, lineHeight: 1.25 }}>{methodLabel(m)}</span>
                                 {paymentMethod === m.code && <span style={{ color: '#06A3DA', fontSize: 12 }}>✓</span>}
                             </button>
                         ))}
@@ -430,8 +434,7 @@ export default function Bills() {
                     [biller?.field, account],
                     accountName ? ['Account name', accountName] : null,
                     isNyaradzo ? ['Months', selectedMonths === 0 ? 'Balance only' : `Balance + ${selectedMonths}`] : null,
-                    ...chargeRows(quote, Math.round(totalAmount * 100), totalCurrency),
-                    ['Payment via', methodLabel(pm, balances, totalCurrency) || paymentMethod],
+                    ['Payment via', methodLabel(pm) || paymentMethod],
                     [getPaymentFieldLabel(), normalizePhone(phone)],
                 ]}
             />

@@ -1,3 +1,4 @@
+import { BackBar } from '../components/shell/AppShell';
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { transactionsApi, walletApi, formatAmount } from '../lib/api';
@@ -125,9 +126,10 @@ export default function History() {
     }
 
     return (
-        <div style={{ maxWidth: 900, margin: '0 auto', padding: '48px 20px' }}>
+        <div style={{ maxWidth: 980 }}>
+            <BackBar title="History" />
             {/* Header */}
-            <div style={{ marginBottom: 36 }}>
+            <div style={{ marginBottom: 36, display: 'none' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 8 }}>
                     <div style={{
                         width: 48, height: 48, borderRadius: '50%',
@@ -226,7 +228,7 @@ export default function History() {
                           {productName}
                         </span>
                                                 <span style={{ fontWeight: 800, fontSize: 16, color: '#06A3DA' }}>
-                          {formatAmount(tx.amountCents, tx.currency)}
+                          {formatAmount(tx.totalCents ?? tx.amountCents, tx.currency)}
                         </span>
                                             </div>
                                             <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
@@ -305,8 +307,7 @@ function TxDetails({ tx, productName, recipient, status }) {
     const token = tx.voucherToken || tx.token || tx.fulfilmentToken;
     return (
         <Details items={[
-            ['Reference', tx.reference], ['What', productName], ['To', recipient], ['Amount', formatAmount(tx.amountCents, tx.currency)],
-            ...((tx.chargeCents || tx.taxCents) ? [['Charge', formatAmount((tx.chargeCents || 0) + (tx.taxCents || 0), tx.currency)], ['Total paid', formatAmount(tx.totalCents, tx.currency)]] : []),
+            ['Reference', tx.reference], ['What', productName], ['To', recipient], ['Amount', formatAmount(tx.totalCents ?? tx.amountCents, tx.currency)],
             ['Paid with', METHOD[tx.paymentMethodCode] || tx.paymentMethodCode || tx.paymentMethod], ['Status', status],
             ['Date', fmtDate(tx.createdAt || tx.initiatedAt)], ['Token', token],
         ]}>

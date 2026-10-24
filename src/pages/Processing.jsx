@@ -1,3 +1,5 @@
+import { useAuth } from '../lib/AuthContext';
+import { BackBar } from '../components/shell/AppShell';
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { transactionsApi } from '../lib/api';
@@ -162,6 +164,7 @@ const getEcoCashReference = (transaction) => {
 };
 
 export default function Processing() {
+    const { user } = useAuth();
     const { ref } = useParams();
     const navigate = useNavigate();
     const [transaction, setTransaction] = useState(null);
@@ -297,8 +300,9 @@ export default function Processing() {
     const handleTryAgain = () => navigate('/');
 
     return (
-        <div style={{ minHeight: '100vh', background: C.bgGrey, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-            <div style={{ maxWidth: 460, width: '100%' }}>
+        <div style={user ? { maxWidth: 820 } : { minHeight: '100vh', background: C.bgGrey, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+            {user && <BackBar title="Payment" />}
+            <div style={{ maxWidth: user ? 560 : 460, width: '100%' }}>
                 <div style={{ background: 'var(--bg-card)', borderRadius: 22, padding: '26px 26px', border: '1.5px solid rgba(6,163,218,0.1)', boxShadow: '0 8px 48px rgba(6,163,218,0.1)', textAlign: 'center' }}>
 
                     {/* Top icon */}

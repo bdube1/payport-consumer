@@ -1,10 +1,12 @@
+import { useAuth } from '../lib/AuthContext';
+import { BackBar } from '../components/shell/AppShell';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { productsApi, startPayment, paymentError, normalizePhone, generateReference, formatAmount, BASE, visibleMethods } from '../lib/api';
 import WalletPin from '../components/flow/WalletPin';
 import FlowSection from '../components/flow/FlowSection';
 import ConfirmModal from '../components/flow/ConfirmModal';
-import { useCharge, useWalletBalances, methodLabel, chargeRows } from '../lib/charges';
+import { useCharge, methodLabel } from '../lib/charges';
 
 const PAYMENT_METHODS = [
     { code: 'ECOCASH', name: 'EcoCash' },
@@ -22,6 +24,7 @@ const MOBILE_MONEY = ['ECOCASH', 'ONEMONEY', 'TELECASH', 'OMARI'];
 
 
 export default function Data() {
+    const { user } = useAuth();
     const navigate = useNavigate();
 
     const [network, setNetwork] = useState('ECONET');
@@ -195,13 +198,14 @@ export default function Data() {
     const pm = paymentMethods.find(m => m.code === paymentMethod);
 
     const quote = useCharge(network ? `DATA_${network}` : null, selectedCurrency || 'USD', bundle?.amountCents || 0);
-    const balances = useWalletBalances();
     return (
-        <div style={{ maxWidth: 560, margin: '0 auto', padding: '24px 20px 40px' }}>
+        <div style={user ? { maxWidth: 820 } : { maxWidth: 560, margin: '0 auto', padding: '24px 20px 40px' }}>
+            {user ? <BackBar title="Data" /> : <>
             <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', color: 'var(--text-2)', fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 18, padding: 0 }}>← Back</button>
 
             <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', marginBottom: 4 }}>Buy Data</h1>
             <p style={{ fontSize: 14, color: 'var(--text-2)', marginBottom: 28 }}>Fill in the details below — you'll pay once everything's set.</p>
+            </>}
 
             <div style={{ background: 'var(--bg-card)', borderRadius: 20, padding: '28px 26px', boxShadow: '0 4px 24px rgba(9,30,62,0.06)', border: '1px solid rgba(6,163,218,0.12)' }}>
                 {error && (
@@ -303,7 +307,7 @@ export default function Data() {
                                 border: `2px solid ${paymentMethod === m.code ? '#06A3DA' : 'rgba(6,163,218,0.15)'}`,
                                 background: paymentMethod === m.code ? 'rgba(6,163,218,0.08)' : 'var(--bg-card)', color: 'var(--text)',
                             }}>
-                                <span style={{ fontWeight: 700, fontSize: 12.5, lineHeight: 1.25 }}>{methodLabel(m, balances, selectedCurrency || 'USD')}</span>
+                                <span style={{ fontWeight: 700, fontSize: 12.5, lineHeight: 1.25 }}>{methodLabel(m)}</span>
                                 {paymentMethod === m.code && <span style={{ color: '#06A3DA', fontSize: 12 }}>✓</span>}
                             </button>
                         ))}
@@ -336,8 +340,7 @@ export default function Data() {
                     ['Bundle', bundle?.name],
                     ['Network', network],
                     ['Recipient', normalizePhone(recipientPhone)],
-                    ...chargeRows(quote, bundle?.amountCents || 0, selectedCurrency || 'USD'),
-                    ['Payment via', methodLabel(pm, balances, selectedCurrency || 'USD') || paymentMethod],
+                    ['Payment via', methodLabel(pm) || paymentMethod],
                     [getPaymentFieldLabel(), normalizePhone(paymentIdentifier)],
                 ]}
             />

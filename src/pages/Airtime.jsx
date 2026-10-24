@@ -1,3 +1,4 @@
+import { BackBar } from '../components/shell/AppShell';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { productsApi, startPayment, paymentError, normalizePhone, formatAmount, generateReference, visibleMethods } from '../lib/api';
@@ -5,7 +6,7 @@ import WalletPin from '../components/flow/WalletPin';
 import { useAuth } from '../lib/AuthContext';
 import FlowSection from '../components/flow/FlowSection';
 import ConfirmModal from '../components/flow/ConfirmModal';
-import { useCharge, useWalletBalances, methodLabel, chargeRows } from '../lib/charges';
+import { useCharge, methodLabel } from '../lib/charges';
 
 const C = { primary: '#06A3DA', green: '#34AD54', dark: 'var(--text)', light: 'var(--light)' };
 
@@ -218,10 +219,10 @@ export default function Airtime() {
     const pm = paymentMethods.find(m => m.code === paymentMethod);
     const displayAmt = getFinalAmount() || 0;
     const quote = useCharge(productCode, selectedCurrency || 'USD', displayAmt);
-    const balances = useWalletBalances();
 
     return (
-        <div style={{ maxWidth: 560, margin: '0 auto', padding: '24px 20px 40px' }}>
+        <div style={user ? { maxWidth: 820 } : { maxWidth: 560, margin: '0 auto', padding: '24px 20px 40px' }}>
+            {user ? <BackBar title="Airtime" /> : <>
             <button onClick={() => navigate(originalPath)} style={{
                 background: 'none', border: 'none', color: 'var(--text-2)', fontSize: 13, fontWeight: 600,
                 cursor: 'pointer', marginBottom: 18, padding: 0,
@@ -229,6 +230,7 @@ export default function Airtime() {
 
             <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', marginBottom: 4 }}>Buy Airtime</h1>
             <p style={{ fontSize: 14, color: 'var(--text-2)', marginBottom: 28 }}>Fill in the details below — you'll pay once everything's set.</p>
+            </>}
 
             <div style={{ background: 'var(--bg-card)', borderRadius: 20, padding: '28px 26px', boxShadow: 'var(--shadow)', border: '1px solid var(--border)' }}>
                 {error && (
@@ -309,7 +311,7 @@ export default function Airtime() {
                                 border: paymentMethod === m.code ? `2px solid ${C.primary}` : '2px solid var(--border)',
                                 background: paymentMethod === m.code ? 'rgba(6,163,218,0.08)' : 'var(--bg-2)', color: 'var(--text)',
                             }}>
-                                <span style={{ fontWeight: 700, fontSize: 12.5, lineHeight: 1.25 }}>{methodLabel(m, balances, selectedCurrency || 'USD')}</span>
+                                <span style={{ fontWeight: 700, fontSize: 12.5, lineHeight: 1.25 }}>{methodLabel(m)}</span>
                                 {paymentMethod === m.code && <span style={{ color: C.primary, fontSize: 12 }}>✓</span>}
                             </button>
                         ))}
@@ -344,8 +346,7 @@ export default function Airtime() {
                 rows={[
                     ['Service', network?.networkName ? `${network.networkName} Airtime` : 'Airtime'],
                     ['Recipient', finalRecipient],
-                    ...chargeRows(quote, displayAmt, selectedCurrency || 'USD'),
-                    ['Payment via', methodLabel(pm, balances, selectedCurrency || 'USD') || paymentMethod],
+                    ['Payment via', methodLabel(pm) || paymentMethod],
                     [getPaymentFieldLabel(), normalizePhone(paymentIdentifier)],
                 ]}
             />

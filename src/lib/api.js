@@ -226,9 +226,9 @@ export async function startPayment(initiatePayload, payPayload) {
 
 /** The PayPort wallet is offered only to a signed-in customer, and comes first (the default) for them. */
 export function visibleMethods(methods) {
-    return isLoggedIn()
-        ? methods.map(m => (m.code === 'WALLET' ? { ...m, displayOrder: -1000 } : m))
-        : methods.filter(m => m.code !== 'WALLET');
+    if (!isLoggedIn()) return methods.filter(m => m.code !== 'WALLET');
+    const rest = methods.filter(m => m.code !== 'WALLET');
+    return [{ code: 'WALLET', name: 'PayPort Wallet', isActive: true, displayOrder: -1000 }, ...rest];
 }
 
 // ===== WALLET (Phase 8; switched on by PayPort when licensed) =====
@@ -253,6 +253,7 @@ export const walletApi = {
     quote: (from, to, amountMinor) => api.post('/api/v1/wallet/fx/quotes', { from, to, amountMinor }),
     convert: (quoteRef, pin) => api.post('/api/v1/wallet/fx/conversions', { quoteRef, pin }),
     agent: (code) => api.get(`/api/v1/wallet/agents/${encodeURIComponent(code)}`),
+    scan: (payload) => api.get('/api/v1/codes/scan', { params: { payload } }),
     cashOut: (agentCode, currency, amountMinor, pin, clientRef) => api.post('/api/v1/wallet/cash-out', { agentCode, currency, amountMinor, pin, clientRef }),
     merchant: (code) => api.get(`/api/v1/wallet/merchants/${encodeURIComponent(code)}`),
     payMerchant: (merchantCode, currency, amountMinor, pin, description) => api.post('/api/v1/wallet/pay-merchant', { merchantCode, currency, amountMinor, pin, description }),

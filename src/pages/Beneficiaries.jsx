@@ -1,3 +1,4 @@
+import { BackBar } from '../components/shell/AppShell';
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
@@ -117,13 +118,13 @@ export default function Beneficiaries() {
     const filtered = bens.filter(b => filter === 'ALL' ? true : (b.type || 'PHONE') === filter);
 
     return (
-        <div style={{ maxWidth: 800, margin: '0 auto', padding: '48px 20px' }}>
+        <div style={user ? { maxWidth: 980 } : { maxWidth: 800, margin: '0 auto', padding: '48px 20px' }}>
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
-                <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: user ? 'center' : 'flex-start', marginBottom: user ? 18 : 24, flexWrap: 'wrap', gap: 16 }}>
+                {user ? <BackBar title="Contacts" /> : <div>
                     <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--text)', marginBottom: 6 }}>My Beneficiaries</h1>
                     <p style={{ fontSize: 15, color: 'var(--text-2)' }}>Save numbers and bill accounts for quick access</p>
-                </div>
+                </div>}
                 {user && (
                     <button onClick={openAdd} style={{
                         padding: '12px 22px', borderRadius: 12, fontWeight: 700, fontSize: 14,

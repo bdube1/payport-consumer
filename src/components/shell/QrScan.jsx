@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import jsQR from 'jsqr';
 
-/** The six-digit merchant code in a PayPort QR (PAYPORT-MERCHANT:123456, a link ending in the code, or the code alone). */
-export function codeFromQr(data) {
-    const m = String(data || '').match(/([1-9]\d{5})(?!.*\d)/);
-    return m ? m[1] : null;
+/** A PayPort QR: PAYPORT-QR:<token> (current QRs), or an older QR / text holding the six-digit code. */
+export function isPayportQr(data) {
+    const s = String(data || '').trim();
+    return /^PAYPORT-QR:[A-Z]{16}$/i.test(s) || /([1-9]\d{5})(?!.*\d)/.test(s);
 }
 
 /** Reads a merchant QR code with the device camera. */
@@ -24,8 +24,7 @@ export default function QrScan({ onCode, onError }) {
                 const img = ctx.getImageData(0, 0, c.width, c.height);
                 const hit = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
                 if (hit?.data) {
-                    const code = codeFromQr(hit.data);
-                    if (code) { stopped = true; onCode(code); return; }
+                    if (isPayportQr(hit.data)) { stopped = true; onCode(hit.data.trim()); return; }
                     setStatus('That is not a PayPort merchant QR code.');
                 }
             }
