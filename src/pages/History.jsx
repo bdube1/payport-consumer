@@ -306,6 +306,7 @@ function TxDetails({ tx, productName, recipient, status }) {
     return (
         <Details items={[
             ['Reference', tx.reference], ['What', productName], ['To', recipient], ['Amount', formatAmount(tx.amountCents, tx.currency)],
+            ...((tx.chargeCents || tx.taxCents) ? [['Charge', formatAmount((tx.chargeCents || 0) + (tx.taxCents || 0), tx.currency)], ['Total paid', formatAmount(tx.totalCents, tx.currency)]] : []),
             ['Paid with', METHOD[tx.paymentMethodCode] || tx.paymentMethodCode || tx.paymentMethod], ['Status', status],
             ['Date', fmtDate(tx.createdAt || tx.initiatedAt)], ['Token', token],
         ]}>

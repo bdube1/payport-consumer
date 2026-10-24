@@ -260,6 +260,7 @@ export const walletApi = {
     cards: () => api.get('/api/v1/wallet/cards'),
     requestCard: (body) => api.post('/api/v1/wallet/cards', body),
     cardAction: (ref, action, pin) => api.post(`/api/v1/wallet/cards/${encodeURIComponent(ref)}/action`, { action, pin }),
+    revealCard: (ref, pin) => api.post(`/api/v1/wallet/cards/${encodeURIComponent(ref)}/reveal`, { pin }),
     refreshCard: (ref) => api.post(`/api/v1/wallet/cards/${encodeURIComponent(ref)}/refresh`),
 };
 

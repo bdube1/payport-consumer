@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { BackBar } from '../components/shell/AppShell';
+import QrScan from '../components/shell/QrScan';
 import { useAuth } from '../lib/AuthContext';
+import Icon from '../components/shell/Icons';
 import { walletApi, productsApi, startPayment, paymentError, generateReference, formatAmount, normalizePhone, liveCurrencies } from '../lib/api';
 
 const C = { primary: '#06A3DA', green: '#34AD54', dark: 'var(--text)', muted: 'var(--text-2)', red: '#e53e3e', soft: 'var(--light)' };
@@ -24,18 +27,17 @@ const when = (v) => {
 };
 const msg = (e, fallback) => e?.response?.data?.message || fallback;
 
-const ACTIONS = [['topup', 'Top up'], ['send', 'Send money'], ['cashout', 'Cash out'], ['convert', 'Convert'], ['merchant', 'Pay merchant'], ['cards', 'Cards']];
+const ACTIONS = [['topup', 'Top up'], ['send', 'Send money'], ['cashout', 'Cash out'], ['convert', 'Convert'], ['merchant', 'Pay merchant']];
 
 /** Wallet actions for a registered customer: top up, send, cash out at an agent, convert, pay a merchant by code, cards. */
 export default function Wallet() {
     const { user } = useAuth();
     const navigate = useNavigate();
-    const [params, setParams] = useSearchParams();
+    const [params] = useSearchParams();
     const [state, setState] = useState({ loading: true, enabled: false, wallets: [] });
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
     const tab = ACTIONS.some(([k]) => k === params.get('a')) ? params.get('a') : 'topup';
-    const setTab = (k) => setParams({ a: k }, { replace: true });
     const [selected, setSelected] = useState('');
     const [busy, setBusy] = useState(false);
 
@@ -74,41 +76,17 @@ export default function Wallet() {
             {error && <div style={{ ...card, borderColor: C.red, color: C.red, marginBottom: 12 }}>{error}</div>}
             {notice && <div style={{ ...card, borderColor: C.green, color: C.green, marginBottom: 12, whiteSpace: 'pre-line' }}>{notice}</div>}
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 16 }}>
-                {state.wallets.map(w => (
-                    <button key={w.walletRef} onClick={() => setSelected(w.walletRef)} style={{
-                        ...card, textAlign: 'left', cursor: 'pointer',
-                        background: w.walletRef === wallet?.walletRef ? `linear-gradient(135deg, ${C.primary}, #0487b8)` : 'var(--bg-card)',
-                        color: w.walletRef === wallet?.walletRef ? 'white' : C.dark,
-                    }}>
-                        <div style={{ fontSize: 12, opacity: 0.85 }}>{w.currency} wallet · {w.walletRef}{w.status !== 'ACTIVE' ? ` · ${w.status}` : ''}</div>
-                        <div style={{ fontSize: 28, fontWeight: 800, margin: '6px 0' }}>{formatAmount(w.balanceMinor, w.currency)}</div>
-                        {w.dailyOutMinor != null && <div style={{ fontSize: 12, opacity: 0.85 }}>
-                            Used today {formatAmount(w.usedTodayMinor || 0, w.currency)} of {formatAmount(w.dailyOutMinor, w.currency)}
-                        </div>}
-                    </button>
-                ))}
-                {state.enabled && <OpenWallet existing={state.wallets.map(w => w.currency)} busy={busy}
-                    onOpen={(ccy) => run(() => walletApi.open(ccy), d => `Your ${d.currency} wallet ${d.walletRef} is ready.`)} />}
-            </div>
+            {state.enabled && state.wallets.length === 0 && <OpenWallet existing={[]} busy={busy}
+                onOpen={(ccy) => run(() => walletApi.open(ccy), d => `Your ${d.currency} wallet ${d.walletRef} is ready.`)} />}
 
             {wallet && <>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
-                    {ACTIONS.map(([k, t]) => (
-                        <button key={k} onClick={() => { setTab(k); setError(''); setNotice(''); }} style={{
-                            padding: '9px 16px', borderRadius: 20, fontWeight: 700, fontSize: 13, cursor: 'pointer',
-                            border: `2px solid ${tab === k ? C.primary : 'rgba(6,163,218,0.2)'}`,
-                            background: tab === k ? 'rgba(6,163,218,0.08)' : 'var(--bg-card)', color: C.dark,
-                        }}>{t}</button>
-                    ))}
-                </div>
                 <div style={card}>
+                    {state.wallets.length > 1 && <WalletPick wallets={state.wallets} value={wallet.walletRef} onChange={setSelected} />}
                     {tab === 'topup' && <TopUp wallet={wallet} user={user} navigate={navigate} setError={setError} />}
                     {tab === 'send' && <Send wallet={wallet} busy={busy} run={run} />}
                     {tab === 'convert' && <Convert wallet={wallet} wallets={state.wallets} busy={busy} run={run} setError={setError} />}
                     {tab === 'cashout' && <CashOut wallet={wallet} busy={busy} run={run} setError={setError} />}
                     {tab === 'merchant' && <PayMerchant wallet={wallet} busy={busy} run={run} setError={setError} />}
-                    {tab === 'cards' && <Cards wallets={state.wallets} setError={setError} setNotice={setNotice} />}
                 </div>
             </>}
         </Page>
@@ -116,10 +94,30 @@ export default function Wallet() {
 }
 
 function Page({ children }) {
-    return <div style={{ maxWidth: 760, margin: '0 auto', padding: '28px 16px 48px' }}>
-        <h2 style={{ color: 'var(--text)', margin: '0 0 16px' }}>PayPort Wallet</h2>
+    const [params] = useSearchParams();
+    const title = (ACTIONS.find(([k]) => k === params.get('a')) || ACTIONS[0])[1];
+    return <div style={{ maxWidth: 760 }}>
+        <BackBar title={title} />
         {children}
     </div>;
+}
+
+function WalletPick({ wallets, value, onChange }) {
+    return <>
+        <span style={{ ...label, marginTop: 0 }}>Wallet</span>
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${wallets.length}, minmax(0, 1fr))`, gap: 10, marginBottom: 14 }}>
+            {wallets.map(w => (
+                <button key={w.walletRef} onClick={() => onChange(w.walletRef)} style={{
+                    textAlign: 'left', padding: '10px 14px', borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit',
+                    border: `2px solid ${w.walletRef === value ? C.primary : 'rgba(6,163,218,0.2)'}`,
+                    background: w.walletRef === value ? 'rgba(6,163,218,0.08)' : 'var(--bg-card)', color: 'var(--text)',
+                }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-2)', fontWeight: 700 }}>{w.currency}</div>
+                    <div style={{ fontSize: 17, fontWeight: 800 }}>{formatAmount(w.balanceMinor, w.currency)}</div>
+                </button>
+            ))}
+        </div>
+    </>;
 }
 
 function OpenWallet({ existing, busy, onOpen }) {
@@ -304,17 +302,30 @@ function PayMerchant({ wallet, busy, run, setError }) {
     const [pin, setPin] = useState('');
     const cents = toMinor(amount);
     const charge = useCharge('MERCHANT_PAYMENT', wallet, cents);
-    const find = async () => {
+    const [mode, setMode] = useState('code');
+    const find = async (c) => {
         setError(''); setMerchant(null);
-        try { const r = await walletApi.merchant(code); setMerchant(r.data?.data); }
+        try { const r = await walletApi.merchant(c); setMerchant(r.data?.data); }
         catch (e) { setError(msg(e, 'No merchant with that code.')); }
     };
     const reset = () => { setCode(''); setMerchant(null); setAmount(''); setNote(''); setPin(''); };
     if (!merchant) return <>
         <h4 style={{ margin: 0, color: 'var(--text)' }}>Pay a merchant</h4>
-        <span style={label}>Merchant code</span>
-        <input style={codeInput} value={code} onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" placeholder="000000" />
-        <button disabled={code.length !== 6} onClick={find} style={btn(code.length === 6, C.primary)}>Continue</button>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 14 }}>
+            {[['scan', 'qr', 'Scan QR'], ['code', 'keypad', 'Enter code']].map(([k, ic, t]) => (
+                <button key={k} onClick={() => setMode(k)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '13px 0', borderRadius: 12, cursor: 'pointer',
+                    fontWeight: 700, fontSize: 15, fontFamily: 'inherit', border: `2px solid ${mode === k ? C.primary : 'rgba(6,163,218,0.2)'}`,
+                    background: mode === k ? C.primary : 'var(--bg-card)', color: mode === k ? '#fff' : 'var(--text)' }}>
+                    <Icon name={ic} size={20} />{t}
+                </button>
+            ))}
+        </div>
+        {mode === 'scan' && <QrScan onCode={(c) => { setMode('code'); setCode(c); find(c); }} onError={(m) => setError(m)} />}
+        {mode === 'code' && <>
+            <span style={label}>Merchant code</span>
+            <input style={codeInput} value={code} onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" placeholder="000000" />
+            <button disabled={code.length !== 6} onClick={() => find(code)} style={btn(code.length === 6, C.primary)}>Continue</button>
+        </>}
     </>;
     const takes = !merchant.currencies?.length || merchant.currencies.includes(wallet.currency);
     const ok = takes && cents > 0 && pin.length >= 4 && !busy;
@@ -341,83 +352,3 @@ function PayMerchant({ wallet, busy, run, setError }) {
     </>;
 }
 
-const SCHEME = { VISA: 'VISA', ZIMSWITCH: 'ZimSwitch' };
-const CARD_STATUS = { REQUESTED: 'Requested', ACTIVE: 'Active', FROZEN: 'Frozen', BLOCKED: 'Blocked', CANCELLED: 'Cancelled', REFUSED: 'Refused' };
-
-function Cards({ wallets, setError, setNotice }) {
-    const [data, setData] = useState(null);
-    const [form, setForm] = useState(null);
-    const [pin, setPin] = useState('');
-    const [busy, setBusy] = useState(false);
-    const load = () => walletApi.cards().then(r => setData(r.data?.data || { cards: [] })).catch(e => { setData({ cards: [] }); setError(msg(e, 'Could not load your cards.')); });
-    useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-    const act = async (fn, ok) => {
-        setBusy(true); setError(''); setNotice('');
-        try { await fn(); setNotice(ok); setPin(''); setForm(null); await load(); }
-        catch (e) { setError(msg(e, 'That did not work. Please try again.')); }
-        finally { setBusy(false); }
-    };
-    if (!data) return <p>Loading…</p>;
-    const schemes = data.options?.schemes || [{ scheme: 'VISA' }, { scheme: 'ZIMSWITCH' }];
-    return <>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h4 style={{ margin: 0, color: 'var(--text)' }}>My cards</h4>
-            {!form && <button onClick={() => setForm({ walletRef: wallets[0]?.walletRef || '', scheme: 'VISA', form: 'VIRTUAL', nameOnCard: '', deliveryAddress: '' })}
-                style={{ ...btn(true, C.primary), width: 'auto', marginTop: 0, padding: '8px 14px' }}>Get a card</button>}
-        </div>
-        {form && <div style={{ marginTop: 12, padding: 14, borderRadius: 10, background: 'var(--light)' }}>
-            <span style={label}>Wallet</span>
-            <select style={input} value={form.walletRef} onChange={e => setForm(f => ({ ...f, walletRef: e.target.value }))}>
-                {wallets.map(w => <option key={w.walletRef} value={w.walletRef}>{w.currency} · {w.walletRef}</option>)}
-            </select>
-            <span style={label}>Card</span>
-            <select style={input} value={form.scheme} onChange={e => setForm(f => ({ ...f, scheme: e.target.value }))}>
-                {schemes.map(s => <option key={s.scheme} value={s.scheme}>{SCHEME[s.scheme] || s.scheme}</option>)}
-            </select>
-            <span style={label}>Type</span>
-            <select style={input} value={form.form} onChange={e => setForm(f => ({ ...f, form: e.target.value }))}>
-                <option value="VIRTUAL">Virtual</option><option value="PHYSICAL">Physical</option>
-            </select>
-            <span style={label}>Name on card</span>
-            <input style={input} value={form.nameOnCard} maxLength={26} onChange={e => setForm(f => ({ ...f, nameOnCard: e.target.value.toUpperCase() }))} />
-            {form.form === 'PHYSICAL' && <>
-                <span style={label}>Delivery address</span>
-                <input style={input} value={form.deliveryAddress} onChange={e => setForm(f => ({ ...f, deliveryAddress: e.target.value }))} />
-            </>}
-            <span style={label}>PIN</span>
-            <input style={input} type="password" inputMode="numeric" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))} />
-            <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => setForm(null)} style={{ ...btn(true, '#8a94a6') }}>Cancel</button>
-                <button disabled={busy || pin.length < 4 || !form.nameOnCard.trim()} onClick={() => act(() => walletApi.requestCard({ ...form, pin }), 'Card requested.')}
-                    style={btn(!busy && pin.length >= 4 && !!form.nameOnCard.trim())}>Request card</button>
-            </div>
-        </div>}
-        {data.cards.length === 0 && !form && <p style={{ color: 'var(--text-2)' }}>No cards yet.</p>}
-        <div style={{ display: 'grid', gap: 12, marginTop: 14 }}>
-            {data.cards.map(c => <div key={c.cardRef} style={{ borderRadius: 14, padding: 18, color: 'white', background: c.scheme === 'VISA' ? 'linear-gradient(135deg, #1a1f71, #06A3DA)' : 'linear-gradient(135deg, #0b6b3a, #34AD54)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, opacity: 0.9 }}>
-                    <span>{c.form === 'VIRTUAL' ? 'Virtual' : 'Physical'} · {c.currency} wallet {c.walletRef}</span>
-                    <b>{SCHEME[c.scheme]}</b>
-                </div>
-                <div style={{ fontFamily: 'monospace', fontSize: 20, letterSpacing: 2, margin: '14px 0 6px' }}>{c.maskedPan || (c.last4 ? `•••• •••• •••• ${c.last4}` : '•••• •••• •••• ••••')}</div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                    <span>{c.nameOnCard}</span><span>{c.expiry || ''}</span>
-                </div>
-                <div style={{ marginTop: 10, fontSize: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <span style={{ background: 'rgba(255,255,255,0.2)', padding: '3px 10px', borderRadius: 20 }}>{CARD_STATUS[c.status] || c.status}{c.note ? ` · ${c.note}` : ''}</span>
-                    {['REQUESTED', 'ACTIVE', 'FROZEN'].includes(c.status) && <span style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                        <input type="password" inputMode="numeric" maxLength={6} placeholder="PIN" value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
-                            style={{ width: 70, padding: '5px 8px', borderRadius: 8, border: 'none', fontSize: 13 }} />
-                        {c.status === 'ACTIVE' && <CardBtn disabled={busy || pin.length < 4} onClick={() => act(() => walletApi.cardAction(c.cardRef, 'FREEZE', pin), 'Card frozen.')}>Freeze</CardBtn>}
-                        {c.status === 'FROZEN' && <CardBtn disabled={busy || pin.length < 4} onClick={() => act(() => walletApi.cardAction(c.cardRef, 'UNFREEZE', pin), 'Card unfrozen.')}>Unfreeze</CardBtn>}
-                        <CardBtn disabled={busy || pin.length < 4} onClick={() => window.confirm('Are you sure?') && act(() => walletApi.cardAction(c.cardRef, 'CANCEL', pin), 'Card cancelled.')}>Cancel</CardBtn>
-                    </span>}
-                </div>
-            </div>)}
-        </div>
-    </>;
-}
-
-function CardBtn({ children, ...p }) {
-    return <button {...p} style={{ padding: '5px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.6)', background: 'transparent', color: 'white', fontWeight: 700, cursor: p.disabled ? 'not-allowed' : 'pointer', opacity: p.disabled ? 0.6 : 1 }}>{children}</button>;
-}

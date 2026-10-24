@@ -5,6 +5,7 @@ import WalletPin from '../components/flow/WalletPin';
 import { useAuth } from '../lib/AuthContext';
 import FlowSection from '../components/flow/FlowSection';
 import ConfirmModal from '../components/flow/ConfirmModal';
+import { useCharge, useWalletBalances, methodLabel, chargeRows } from '../lib/charges';
 
 const C = { primary: '#06A3DA', green: '#34AD54', dark: 'var(--text)', light: 'var(--light)' };
 
@@ -216,6 +217,8 @@ export default function Airtime() {
 
     const pm = paymentMethods.find(m => m.code === paymentMethod);
     const displayAmt = getFinalAmount() || 0;
+    const quote = useCharge(productCode, selectedCurrency || 'USD', displayAmt);
+    const balances = useWalletBalances();
 
     return (
         <div style={{ maxWidth: 560, margin: '0 auto', padding: '24px 20px 40px' }}>
@@ -306,7 +309,7 @@ export default function Airtime() {
                                 border: paymentMethod === m.code ? `2px solid ${C.primary}` : '2px solid var(--border)',
                                 background: paymentMethod === m.code ? 'rgba(6,163,218,0.08)' : 'var(--bg-2)', color: 'var(--text)',
                             }}>
-                                <span style={{ fontWeight: 700, fontSize: 12.5, lineHeight: 1.25 }}>{m.name}</span>
+                                <span style={{ fontWeight: 700, fontSize: 12.5, lineHeight: 1.25 }}>{methodLabel(m, balances, selectedCurrency || 'USD')}</span>
                                 {paymentMethod === m.code && <span style={{ color: C.primary, fontSize: 12 }}>✓</span>}
                             </button>
                         ))}
@@ -337,11 +340,12 @@ export default function Airtime() {
                 onClose={() => setConfirmOpen(false)}
                 onConfirm={handleSubmit}
                 loading={loading}
-                total={formatAmount(displayAmt, selectedCurrency || 'USD')}
+                total={quote ? formatAmount(quote.totalCents, selectedCurrency || 'USD') : formatAmount(displayAmt, selectedCurrency || 'USD')}
                 rows={[
                     ['Service', network?.networkName ? `${network.networkName} Airtime` : 'Airtime'],
                     ['Recipient', finalRecipient],
-                    ['Payment via', pm?.name || paymentMethod],
+                    ...chargeRows(quote, displayAmt, selectedCurrency || 'USD'),
+                    ['Payment via', methodLabel(pm, balances, selectedCurrency || 'USD') || paymentMethod],
                     [getPaymentFieldLabel(), normalizePhone(paymentIdentifier)],
                 ]}
             />

@@ -20,6 +20,8 @@ import Account from './pages/Account';
 import ZimSwitchWidget from './pages/ZimSwitchWidget';
 import Wallet from './pages/Wallet';
 import Dashboard from './pages/Dashboard';
+import AppShell from './components/shell/AppShell';
+import Cards, { CardDetail } from './pages/Cards';
 
 function Layout({ children }) {
     return (
@@ -29,6 +31,12 @@ function Layout({ children }) {
             <Footer />
         </>
     );
+}
+
+/** Guests keep the public site; a signed-in customer gets the customer area. */
+function Area({ children }) {
+    const { user } = useAuth();
+    return user ? <AppShell>{children}</AppShell> : <Layout>{children}</Layout>;
 }
 
 function HomeRoute() {
@@ -46,31 +54,37 @@ export default function App() {
         <AuthProvider>
             <BrowserRouter>
                 <Routes>
-                    <Route path="/" element={<Layout><HomeRoute /></Layout>} />
+                    <Route path="/" element={<Area><HomeRoute /></Area>} />
                     <Route path="/checkout/:sessionId" element={<Checkout />} />
                     <Route path="/pay/:slug" element={<PaymentLink />} />
-                    <Route path="/airtime" element={<Layout><Airtime /></Layout>} />
-                    <Route path="/data" element={<Layout><Data /></Layout>} />
-                    <Route path="/bills" element={<Layout><Bills /></Layout>} />
-                    <Route path="/processing/:ref" element={<Layout><Processing /></Layout>} />
+                    <Route path="/airtime" element={<Area><Airtime /></Area>} />
+                    <Route path="/data" element={<Area><Data /></Area>} />
+                    <Route path="/bills" element={<Area><Bills /></Area>} />
+                    <Route path="/processing/:ref" element={<Area><Processing /></Area>} />
                     {/* ZimSwitch card widget page — loaded after /pay returns widgetJsUrl */}
                     <Route path="/pay/zimswitch/:ref" element={<Layout><ZimSwitchWidget /></Layout>} />
-                    <Route path="/status" element={<Layout><Status /></Layout>} />
-                    <Route path="/status/:ref" element={<Layout><Status /></Layout>} />
-                    <Route path="/help" element={<Layout><Help /></Layout>} />
+                    <Route path="/status" element={<Area><Status /></Area>} />
+                    <Route path="/status/:ref" element={<Area><Status /></Area>} />
+                    <Route path="/help" element={<Area><Help /></Area>} />
                     <Route path="/register" element={<Register />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/history" element={
-                        <PrivateRoute><Layout><History /></Layout></PrivateRoute>
+                        <PrivateRoute><Area><History /></Area></PrivateRoute>
                     } />
                     <Route path="/beneficiaries" element={
-                        <PrivateRoute><Layout><Beneficiaries /></Layout></PrivateRoute>
+                        <PrivateRoute><Area><Beneficiaries /></Area></PrivateRoute>
                     } />
                     <Route path="/wallet" element={
-                        <PrivateRoute><Layout><Wallet /></Layout></PrivateRoute>
+                        <PrivateRoute><Area><Wallet /></Area></PrivateRoute>
+                    } />
+                    <Route path="/cards" element={
+                        <PrivateRoute><Area><Cards /></Area></PrivateRoute>
+                    } />
+                    <Route path="/cards/:ref" element={
+                        <PrivateRoute><Area><CardDetail /></Area></PrivateRoute>
                     } />
                     <Route path="/account" element={
-                        <PrivateRoute><Layout><Account /></Layout></PrivateRoute>
+                        <PrivateRoute><Area><Account /></Area></PrivateRoute>
                     } />
                 </Routes>
                 <FloatingChat />
