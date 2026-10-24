@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
 import { walletApi, productsApi, startPayment, paymentError, generateReference, formatAmount, normalizePhone, liveCurrencies } from '../lib/api';
 
@@ -24,14 +24,18 @@ const when = (v) => {
 };
 const msg = (e, fallback) => e?.response?.data?.message || fallback;
 
-/** PayPort wallet: balances, top-up, send, convert, cash-out code, statement. */
+const ACTIONS = [['topup', 'Top up'], ['send', 'Send money'], ['cashout', 'Cash out'], ['convert', 'Convert'], ['merchant', 'Pay merchant'], ['cards', 'Cards']];
+
+/** Wallet actions for a registered customer: top up, send, cash out at an agent, convert, pay a merchant by code, cards. */
 export default function Wallet() {
     const { user } = useAuth();
     const navigate = useNavigate();
+    const [params, setParams] = useSearchParams();
     const [state, setState] = useState({ loading: true, enabled: false, wallets: [] });
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
-    const [tab, setTab] = useState('topup');
+    const tab = ACTIONS.some(([k]) => k === params.get('a')) ? params.get('a') : 'topup';
+    const setTab = (k) => setParams({ a: k }, { replace: true });
     const [selected, setSelected] = useState('');
     const [busy, setBusy] = useState(false);
 
@@ -90,7 +94,7 @@ export default function Wallet() {
 
             {wallet && <>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
-                    {[['topup', 'Top up'], ['send', 'Send'], ['convert', 'Convert'], ['cashout', 'Cash out'], ['statement', 'Statement']].map(([k, t]) => (
+                    {ACTIONS.map(([k, t]) => (
                         <button key={k} onClick={() => { setTab(k); setError(''); setNotice(''); }} style={{
                             padding: '9px 16px', borderRadius: 20, fontWeight: 700, fontSize: 13, cursor: 'pointer',
                             border: `2px solid ${tab === k ? C.primary : 'rgba(6,163,218,0.2)'}`,
@@ -102,8 +106,9 @@ export default function Wallet() {
                     {tab === 'topup' && <TopUp wallet={wallet} user={user} navigate={navigate} setError={setError} />}
                     {tab === 'send' && <Send wallet={wallet} busy={busy} run={run} />}
                     {tab === 'convert' && <Convert wallet={wallet} wallets={state.wallets} busy={busy} run={run} setError={setError} />}
-                    {tab === 'cashout' && <CashOut wallet={wallet} busy={busy} run={run} />}
-                    {tab === 'statement' && <Statement wallet={wallet} />}
+                    {tab === 'cashout' && <CashOut wallet={wallet} busy={busy} run={run} setError={setError} />}
+                    {tab === 'merchant' && <PayMerchant wallet={wallet} busy={busy} run={run} setError={setError} />}
+                    {tab === 'cards' && <Cards wallets={state.wallets} setError={setError} setNotice={setNotice} />}
                 </div>
             </>}
         </Page>
@@ -112,7 +117,7 @@ export default function Wallet() {
 
 function Page({ children }) {
     return <div style={{ maxWidth: 760, margin: '0 auto', padding: '28px 16px 48px' }}>
-        <h2 style={{ color: 'var(--text)', margin: '0 0 16px' }}>My wallet</h2>
+        <h2 style={{ color: 'var(--text)', margin: '0 0 16px' }}>PayPort Wallet</h2>
         {children}
     </div>;
 }
@@ -180,6 +185,7 @@ function Send({ wallet, busy, run }) {
     const [pin, setPin] = useState('');
     const [clientRef] = useState(() => 'web-' + Date.now().toString(36));
     const cents = toMinor(amount);
+    const charge = useCharge('P2P_TRANSFER', wallet, cents);
     const ok = to.trim().length >= 9 && cents > 0 && pin.length >= 4 && !busy;
     return <>
         <h4 style={{ margin: 0, color: 'var(--text)' }}>Send money</h4>
@@ -187,10 +193,11 @@ function Send({ wallet, busy, run }) {
         <input style={input} value={to} onChange={e => setTo(e.target.value)} placeholder="+263771234567 or W…" />
         <span style={label}>Amount ({wallet.currency})</span>
         <input style={input} value={amount} onChange={e => setAmount(e.target.value)} inputMode="decimal" placeholder="0.00" />
+        <ChargeLine charge={charge} currency={wallet.currency} />
         <span style={label}>PIN</span>
         <input style={input} type="password" inputMode="numeric" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))} />
         <button disabled={!ok} onClick={() => run(() => walletApi.transfer(to.trim().startsWith('W') ? to.trim() : normalizePhone(to), wallet.currency, cents, pin, clientRef),
-            d => `Sent ${formatAmount(d.amountMinor, d.currency)} to ${d.to}. Reference ${d.transferRef}.`).then(() => setPin(''))} style={btn(ok)}>Send</button>
+            d => `Sent ${formatAmount(d.amountMinor, d.currency)} to ${d.toName || d.to}. Reference ${d.transferRef}.`).then(() => setPin(''))} style={btn(ok)}>Send</button>
     </>;
 }
 
@@ -228,49 +235,189 @@ function Convert({ wallet, wallets, busy, run, setError }) {
     </>;
 }
 
-function CashOut({ wallet, busy, run }) {
+function useCharge(product, wallet, cents) {
+    const [charge, setCharge] = useState(null);
+    useEffect(() => {
+        setCharge(null);
+        if (!cents) return undefined;
+        const t = setTimeout(() => walletApi.charges(product, wallet.currency, cents).then(r => setCharge(r.data?.data || null)).catch(() => {}), 400);
+        return () => clearTimeout(t);
+    }, [product, wallet.currency, cents]);
+    return charge;
+}
+
+function ChargeLine({ charge, currency }) {
+    if (!charge || !(charge.chargeMinor || charge.taxMinor)) return null;
+    return <div style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 8 }}>
+        Charge {formatAmount(charge.chargeMinor, currency)}{charge.taxMinor ? ` + tax ${formatAmount(charge.taxMinor, currency)}` : ''} · Total {formatAmount(charge.totalMinor, currency)}
+    </div>;
+}
+
+const codeInput = { ...input, fontSize: 22, letterSpacing: 6, textAlign: 'center', fontFamily: 'monospace' };
+
+function CashOut({ wallet, busy, run, setError }) {
+    const [code, setCode] = useState('');
+    const [agent, setAgent] = useState(null);
     const [amount, setAmount] = useState('');
     const [pin, setPin] = useState('');
-    const [codes, setCodes] = useState([]);
-    const refresh = () => walletApi.cashOutCodes().then(r => setCodes(r.data?.data || [])).catch(() => {});
-    useEffect(() => { refresh(); }, []);
+    const [clientRef, setClientRef] = useState(() => 'web-co-' + Date.now().toString(36));
     const cents = toMinor(amount);
+    const charge = useCharge('CASH_OUT', wallet, cents);
+    const find = async () => {
+        setError(''); setAgent(null);
+        try { const r = await walletApi.agent(code); setAgent(r.data?.data); }
+        catch (e) { setError(msg(e, 'No agent with that code.')); }
+    };
+    const reset = () => { setCode(''); setAgent(null); setAmount(''); setPin(''); setClientRef('web-co-' + Date.now().toString(36)); };
+    if (!agent) return <>
+        <h4 style={{ margin: 0, color: 'var(--text)' }}>Cash out at an agent</h4>
+        <span style={label}>Agent code</span>
+        <input style={codeInput} value={code} onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" placeholder="000000" />
+        <button disabled={code.length !== 6} onClick={find} style={btn(code.length === 6, C.primary)}>Continue</button>
+    </>;
     const ok = cents > 0 && pin.length >= 4 && !busy;
     return <>
         <h4 style={{ margin: 0, color: 'var(--text)' }}>Cash out at an agent</h4>
-        <p style={{ fontSize: 13, color: 'var(--text-2)' }}>Get a one-time code, then give the code and your phone number to a PayPort agent for cash.</p>
+        <div style={{ marginTop: 12, padding: 14, borderRadius: 10, background: 'var(--light)' }}>
+            <div style={{ fontSize: 12, color: 'var(--text-2)' }}>Agent {agent.code}</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)' }}>{agent.name}</div>
+            {agent.location && <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{agent.location}</div>}
+        </div>
+        <button onClick={reset} style={{ background: 'none', border: 'none', color: C.primary, fontWeight: 700, cursor: 'pointer', padding: '8px 0' }}>Not this agent</button>
         <span style={label}>Amount ({wallet.currency})</span>
         <input style={input} value={amount} onChange={e => setAmount(e.target.value)} inputMode="decimal" placeholder="0.00" />
+        <ChargeLine charge={charge} currency={wallet.currency} />
         <span style={label}>PIN</span>
         <input style={input} type="password" inputMode="numeric" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))} />
-        <button disabled={!ok} onClick={() => run(() => walletApi.cashOutCode(wallet.currency, cents, pin),
-            d => `Your cash-out code: ${d.code}\nAmount ${formatAmount(d.amountMinor, d.currency)}, valid until ${when(d.expiresAt)}.\nIt works once.`)
-            .then(() => { setPin(''); refresh(); })} style={btn(ok)}>Get code</button>
-        {codes.length > 0 && <table style={{ width: '100%', marginTop: 16, fontSize: 13, borderCollapse: 'collapse' }}>
-            <thead><tr style={{ color: 'var(--text-2)', textAlign: 'left' }}><th>Created</th><th>Amount</th><th>Status</th></tr></thead>
-            <tbody>{codes.map(c => <tr key={c.id} style={{ borderTop: '1px solid #eef' }}>
-                <td>{when(c.created_at)}</td><td>{formatAmount(c.amount_minor, c.currency)}</td><td>{c.status}</td>
-            </tr>)}</tbody>
-        </table>}
+        <button disabled={!ok} onClick={() => run(() => walletApi.cashOut(agent.code, wallet.currency, cents, pin, clientRef),
+            d => `Collect ${formatAmount(d.amountMinor, d.currency)} cash from ${d.agentName}.\nReference ${d.opRef}.`).then(reset)} style={btn(ok)}>
+            Cash out {cents ? formatAmount(cents, wallet.currency) : ''}
+        </button>
     </>;
 }
 
-const KIND = { TOPUP: 'Top-up', PAYMENT: 'Payment', P2P_OUT: 'Sent', P2P_IN: 'Received', CASH_IN: 'Cash in', CASH_OUT: 'Cash out', FX_OUT: 'Converted out', FX_IN: 'Converted in', REFUND: 'Refund' };
+function PayMerchant({ wallet, busy, run, setError }) {
+    const [code, setCode] = useState('');
+    const [merchant, setMerchant] = useState(null);
+    const [amount, setAmount] = useState('');
+    const [note, setNote] = useState('');
+    const [pin, setPin] = useState('');
+    const cents = toMinor(amount);
+    const charge = useCharge('MERCHANT_PAYMENT', wallet, cents);
+    const find = async () => {
+        setError(''); setMerchant(null);
+        try { const r = await walletApi.merchant(code); setMerchant(r.data?.data); }
+        catch (e) { setError(msg(e, 'No merchant with that code.')); }
+    };
+    const reset = () => { setCode(''); setMerchant(null); setAmount(''); setNote(''); setPin(''); };
+    if (!merchant) return <>
+        <h4 style={{ margin: 0, color: 'var(--text)' }}>Pay a merchant</h4>
+        <span style={label}>Merchant code</span>
+        <input style={codeInput} value={code} onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" placeholder="000000" />
+        <button disabled={code.length !== 6} onClick={find} style={btn(code.length === 6, C.primary)}>Continue</button>
+    </>;
+    const takes = !merchant.currencies?.length || merchant.currencies.includes(wallet.currency);
+    const ok = takes && cents > 0 && pin.length >= 4 && !busy;
+    return <>
+        <h4 style={{ margin: 0, color: 'var(--text)' }}>Pay a merchant</h4>
+        <div style={{ marginTop: 12, padding: 14, borderRadius: 10, background: 'var(--light)' }}>
+            <div style={{ fontSize: 12, color: 'var(--text-2)' }}>Merchant {merchant.code}</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)' }}>{merchant.name}</div>
+            {merchant.address && <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{merchant.address}</div>}
+        </div>
+        <button onClick={reset} style={{ background: 'none', border: 'none', color: C.primary, fontWeight: 700, cursor: 'pointer', padding: '8px 0' }}>Not this merchant</button>
+        {!takes && <p style={{ color: C.red, fontSize: 13 }}>{merchant.name} takes {merchant.currencies.join(', ')}. Choose that wallet above.</p>}
+        <span style={label}>Amount ({wallet.currency})</span>
+        <input style={input} value={amount} onChange={e => setAmount(e.target.value)} inputMode="decimal" placeholder="0.00" />
+        <ChargeLine charge={charge} currency={wallet.currency} />
+        <span style={label}>Note (optional)</span>
+        <input style={input} value={note} onChange={e => setNote(e.target.value)} maxLength={80} />
+        <span style={label}>PIN</span>
+        <input style={input} type="password" inputMode="numeric" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))} />
+        <button disabled={!ok} onClick={() => run(() => walletApi.payMerchant(merchant.code, wallet.currency, cents, pin, note.trim() || null),
+            d => `Paid ${formatAmount(cents, wallet.currency)} to ${d.merchantName || merchant.name}.`).then(reset)} style={btn(ok)}>
+            Pay {cents ? formatAmount(cents, wallet.currency) : ''}
+        </button>
+    </>;
+}
 
-function Statement({ wallet }) {
-    const [rows, setRows] = useState(null);
-    useEffect(() => { walletApi.statement(wallet.walletRef).then(r => setRows(r.data?.data || [])).catch(() => setRows([])); }, [wallet.walletRef]);
-    if (rows === null) return <p>Loading…</p>;
-    if (rows.length === 0) return <p style={{ color: 'var(--text-2)' }}>No transactions yet.</p>;
-    return <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
-        <thead><tr style={{ color: 'var(--text-2)', textAlign: 'left' }}><th>Date</th><th>What</th><th>With</th><th style={{ textAlign: 'right' }}>Amount</th></tr></thead>
-        <tbody>{rows.map(r => <tr key={r.op_ref + r.kind} style={{ borderTop: '1px solid #eef' }}>
-            <td style={{ padding: '6px 0' }}>{when(r.created_at)}</td>
-            <td>{KIND[r.kind] || r.kind}</td>
-            <td style={{ color: 'var(--text-2)' }}>{r.counterparty || ''}</td>
-            <td style={{ textAlign: 'right', fontWeight: 700, color: r.direction === 'CR' ? '#34AD54' : 'var(--text)' }}>
-                {r.direction === 'CR' ? '+' : '−'}{formatAmount(r.amount_minor, r.currency)}
-            </td>
-        </tr>)}</tbody>
-    </table>;
+const SCHEME = { VISA: 'VISA', ZIMSWITCH: 'ZimSwitch' };
+const CARD_STATUS = { REQUESTED: 'Requested', ACTIVE: 'Active', FROZEN: 'Frozen', BLOCKED: 'Blocked', CANCELLED: 'Cancelled', REFUSED: 'Refused' };
+
+function Cards({ wallets, setError, setNotice }) {
+    const [data, setData] = useState(null);
+    const [form, setForm] = useState(null);
+    const [pin, setPin] = useState('');
+    const [busy, setBusy] = useState(false);
+    const load = () => walletApi.cards().then(r => setData(r.data?.data || { cards: [] })).catch(e => { setData({ cards: [] }); setError(msg(e, 'Could not load your cards.')); });
+    useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    const act = async (fn, ok) => {
+        setBusy(true); setError(''); setNotice('');
+        try { await fn(); setNotice(ok); setPin(''); setForm(null); await load(); }
+        catch (e) { setError(msg(e, 'That did not work. Please try again.')); }
+        finally { setBusy(false); }
+    };
+    if (!data) return <p>Loading…</p>;
+    const schemes = data.options?.schemes || [{ scheme: 'VISA' }, { scheme: 'ZIMSWITCH' }];
+    return <>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h4 style={{ margin: 0, color: 'var(--text)' }}>My cards</h4>
+            {!form && <button onClick={() => setForm({ walletRef: wallets[0]?.walletRef || '', scheme: 'VISA', form: 'VIRTUAL', nameOnCard: '', deliveryAddress: '' })}
+                style={{ ...btn(true, C.primary), width: 'auto', marginTop: 0, padding: '8px 14px' }}>Get a card</button>}
+        </div>
+        {form && <div style={{ marginTop: 12, padding: 14, borderRadius: 10, background: 'var(--light)' }}>
+            <span style={label}>Wallet</span>
+            <select style={input} value={form.walletRef} onChange={e => setForm(f => ({ ...f, walletRef: e.target.value }))}>
+                {wallets.map(w => <option key={w.walletRef} value={w.walletRef}>{w.currency} · {w.walletRef}</option>)}
+            </select>
+            <span style={label}>Card</span>
+            <select style={input} value={form.scheme} onChange={e => setForm(f => ({ ...f, scheme: e.target.value }))}>
+                {schemes.map(s => <option key={s.scheme} value={s.scheme}>{SCHEME[s.scheme] || s.scheme}</option>)}
+            </select>
+            <span style={label}>Type</span>
+            <select style={input} value={form.form} onChange={e => setForm(f => ({ ...f, form: e.target.value }))}>
+                <option value="VIRTUAL">Virtual</option><option value="PHYSICAL">Physical</option>
+            </select>
+            <span style={label}>Name on card</span>
+            <input style={input} value={form.nameOnCard} maxLength={26} onChange={e => setForm(f => ({ ...f, nameOnCard: e.target.value.toUpperCase() }))} />
+            {form.form === 'PHYSICAL' && <>
+                <span style={label}>Delivery address</span>
+                <input style={input} value={form.deliveryAddress} onChange={e => setForm(f => ({ ...f, deliveryAddress: e.target.value }))} />
+            </>}
+            <span style={label}>PIN</span>
+            <input style={input} type="password" inputMode="numeric" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))} />
+            <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={() => setForm(null)} style={{ ...btn(true, '#8a94a6') }}>Cancel</button>
+                <button disabled={busy || pin.length < 4 || !form.nameOnCard.trim()} onClick={() => act(() => walletApi.requestCard({ ...form, pin }), 'Card requested.')}
+                    style={btn(!busy && pin.length >= 4 && !!form.nameOnCard.trim())}>Request card</button>
+            </div>
+        </div>}
+        {data.cards.length === 0 && !form && <p style={{ color: 'var(--text-2)' }}>No cards yet.</p>}
+        <div style={{ display: 'grid', gap: 12, marginTop: 14 }}>
+            {data.cards.map(c => <div key={c.cardRef} style={{ borderRadius: 14, padding: 18, color: 'white', background: c.scheme === 'VISA' ? 'linear-gradient(135deg, #1a1f71, #06A3DA)' : 'linear-gradient(135deg, #0b6b3a, #34AD54)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, opacity: 0.9 }}>
+                    <span>{c.form === 'VIRTUAL' ? 'Virtual' : 'Physical'} · {c.currency} wallet {c.walletRef}</span>
+                    <b>{SCHEME[c.scheme]}</b>
+                </div>
+                <div style={{ fontFamily: 'monospace', fontSize: 20, letterSpacing: 2, margin: '14px 0 6px' }}>{c.maskedPan || (c.last4 ? `•••• •••• •••• ${c.last4}` : '•••• •••• •••• ••••')}</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                    <span>{c.nameOnCard}</span><span>{c.expiry || ''}</span>
+                </div>
+                <div style={{ marginTop: 10, fontSize: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <span style={{ background: 'rgba(255,255,255,0.2)', padding: '3px 10px', borderRadius: 20 }}>{CARD_STATUS[c.status] || c.status}{c.note ? ` · ${c.note}` : ''}</span>
+                    {['REQUESTED', 'ACTIVE', 'FROZEN'].includes(c.status) && <span style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                        <input type="password" inputMode="numeric" maxLength={6} placeholder="PIN" value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
+                            style={{ width: 70, padding: '5px 8px', borderRadius: 8, border: 'none', fontSize: 13 }} />
+                        {c.status === 'ACTIVE' && <CardBtn disabled={busy || pin.length < 4} onClick={() => act(() => walletApi.cardAction(c.cardRef, 'FREEZE', pin), 'Card frozen.')}>Freeze</CardBtn>}
+                        {c.status === 'FROZEN' && <CardBtn disabled={busy || pin.length < 4} onClick={() => act(() => walletApi.cardAction(c.cardRef, 'UNFREEZE', pin), 'Card unfrozen.')}>Unfreeze</CardBtn>}
+                        <CardBtn disabled={busy || pin.length < 4} onClick={() => window.confirm('Are you sure?') && act(() => walletApi.cardAction(c.cardRef, 'CANCEL', pin), 'Card cancelled.')}>Cancel</CardBtn>
+                    </span>}
+                </div>
+            </div>)}
+        </div>
+    </>;
+}
+
+function CardBtn({ children, ...p }) {
+    return <button {...p} style={{ padding: '5px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.6)', background: 'transparent', color: 'white', fontWeight: 700, cursor: p.disabled ? 'not-allowed' : 'pointer', opacity: p.disabled ? 0.6 : 1 }}>{children}</button>;
 }

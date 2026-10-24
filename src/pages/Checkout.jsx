@@ -43,7 +43,7 @@ export default function Checkout() {
     const [loadError, setLoadError] = useState('');
     const [phone, setPhone] = useState('');
     const [email, setEmail] = useState('');
-    const [method, setMethod] = useState('ECOCASH');
+    const [method, setMethod] = useState(() => (isLoggedIn() ? 'WALLET' : 'ECOCASH'));
     const [submitting, setSubmitting] = useState(false);
     const [payError, setPayError] = useState('');
     const [widgetJsUrl, setWidgetJsUrl] = useState(null);
@@ -56,7 +56,7 @@ export default function Checkout() {
     const isWallet = method === 'WALLET';
     const [pin, setPin] = useState('');
     // A signed-in PayPort customer can also pay from their wallet (only if PayPort has switched wallets on).
-    const labels = isLoggedIn() ? { ...METHOD_LABELS, WALLET: 'PayPort Wallet' } : METHOD_LABELS;
+    const labels = isLoggedIn() ? { WALLET: 'PayPort Wallet', ...METHOD_LABELS } : METHOD_LABELS;
 
     const loadSession = async () => {
         try {

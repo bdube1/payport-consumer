@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { transactionsApi, formatAmount } from '../lib/api';
+import { Link, useSearchParams } from 'react-router-dom';
+import { transactionsApi, walletApi, formatAmount } from '../lib/api';
 import { useAuth } from '../lib/AuthContext';
 
 const STATUS_COLORS = {
@@ -59,14 +59,15 @@ export default function History() {
     const [page, setPage] = useState(0);
     const [totalPages, setTotalPages] = useState(1);
     const [total, setTotal] = useState(0);
+    const [params, setParams] = useSearchParams();
+    const tab = params.get('tab') === 'wallet' ? 'wallet' : 'payments';
+    const [open, setOpen] = useState(null);
 
     const load = async (p = 0) => {
         setLoading(true);
         setError('');
         try {
-            console.log('Fetching history for page:', p);
             const r = await transactionsApi.getMyHistory(p, 15);
-            console.log('History response:', r);
 
             // Handle different response structures
             let transactions = [];
@@ -91,8 +92,6 @@ export default function History() {
                     totalPagesCount = 1;
                 }
             }
-
-            console.log('Processed transactions:', transactions);
             setTxs(transactions);
             setTotalPages(totalPagesCount);
             setTotal(totalElements);
@@ -139,14 +138,25 @@ export default function History() {
                         {user?.fullName?.[0]?.toUpperCase() || 'U'}
                     </div>
                     <div>
-                        <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)' }}>My Transactions</h1>
+                        <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)' }}>History</h1>
                         <p style={{ fontSize: 14, color: 'var(--text-2)' }}>
-                            {user?.fullName} · {total} total transaction{total !== 1 ? 's' : ''}
+                            {user?.fullName}
                         </p>
                     </div>
                 </div>
             </div>
 
+            <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+                {[['payments', 'Payments'], ['wallet', 'Wallet']].map(([k, t]) => (
+                    <button key={k} onClick={() => setParams(k === 'wallet' ? { tab: 'wallet' } : {}, { replace: true })} style={{
+                        padding: '9px 18px', borderRadius: 20, fontWeight: 700, fontSize: 13, cursor: 'pointer',
+                        border: `2px solid ${tab === k ? '#06A3DA' : 'rgba(6,163,218,0.2)'}`,
+                        background: tab === k ? 'rgba(6,163,218,0.08)' : 'var(--bg-card)', color: 'var(--text)',
+                    }}>{t}</button>
+                ))}
+            </div>
+
+            {tab === 'wallet' ? <WalletHistory /> : <>
             {error && (
                 <div style={{
                     background: 'rgba(229,62,62,0.1)',
@@ -191,7 +201,7 @@ export default function History() {
                             const productName = tx.productName || getProductName(tx.productTypeCode);
 
                             return (
-                                <Link key={tx.reference} to={`/status/${tx.reference}`} style={{ textDecoration: 'none' }}>
+                                <div key={tx.reference} onClick={() => setOpen(open === tx.reference ? null : tx.reference)}>
                                     <div style={{
                                         background: 'var(--bg-card)', borderRadius: 14, padding: '18px 22px',
                                         border: '1px solid var(--border)', cursor: 'pointer', transition: 'all 0.2s',
@@ -229,9 +239,10 @@ export default function History() {
                                             </div>
                                         </div>
 
-                                        <span style={{ color: 'var(--text-2)', fontSize: 18 }}>›</span>
+                                        <span style={{ color: 'var(--text-2)', fontSize: 18, transform: open === tx.reference ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }}>›</span>
                                     </div>
-                                </Link>
+                                    {open === tx.reference && <TxDetails tx={tx} productName={productName} recipient={recipient} status={sc.label} />}
+                                </div>
                             );
                         })}
                     </div>
@@ -265,11 +276,95 @@ export default function History() {
                 </>
             )}
 
+            </>}
+
             <style>{`
         @keyframes spin {
           to { transform: rotate(360deg); }
         }
       `}</style>
         </div>
+    );
+}
+const row = { display: 'flex', justifyContent: 'space-between', gap: 12, padding: '6px 0', borderTop: '1px solid var(--border)', fontSize: 13 };
+
+function Details({ items, children }) {
+    return (
+        <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-2)', borderRadius: '0 0 14px 14px', margin: '-6px 0 0', padding: '14px 22px', border: '1px solid var(--border)', borderTop: 'none' }}>
+            {items.filter(([, v]) => v !== null && v !== undefined && v !== '').map(([k, v]) => (
+                <div key={k} style={row}><span style={{ color: 'var(--text-2)' }}>{k}</span><span style={{ color: 'var(--text)', fontWeight: 600, textAlign: 'right', wordBreak: 'break-all' }}>{v}</span></div>
+            ))}
+            {children}
+        </div>
+    );
+}
+
+const METHOD = { WALLET: 'PayPort Wallet', ECOCASH: 'EcoCash', ONEMONEY: 'OneMoney', OMARI: "O'mari", INNBUCKS: 'InnBucks', ZIMSWITCH: 'Card (ZimSwitch)' };
+
+function TxDetails({ tx, productName, recipient, status }) {
+    const token = tx.voucherToken || tx.token || tx.fulfilmentToken;
+    return (
+        <Details items={[
+            ['Reference', tx.reference], ['What', productName], ['To', recipient], ['Amount', formatAmount(tx.amountCents, tx.currency)],
+            ['Paid with', METHOD[tx.paymentMethodCode] || tx.paymentMethodCode || tx.paymentMethod], ['Status', status],
+            ['Date', fmtDate(tx.createdAt || tx.initiatedAt)], ['Token', token],
+        ]}>
+            <Link to={`/status/${tx.reference}`} style={{ display: 'inline-block', marginTop: 10, color: '#06A3DA', fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>Track this order ›</Link>
+        </Details>
+    );
+}
+
+const KIND = { TOPUP: 'Top-up', PAYMENT: 'Payment', P2P_OUT: 'Sent', P2P_IN: 'Received', CASH_IN: 'Cash in', CASH_OUT: 'Cash out', FX_OUT: 'Converted out', FX_IN: 'Converted in', REFUND: 'Refund' };
+
+function WalletHistory() {
+    const [wallets, setWallets] = useState(null);
+    const [rows, setRows] = useState([]);
+    const [ccy, setCcy] = useState('');
+    const [open, setOpen] = useState(null);
+    useEffect(() => {
+        walletApi.list().then(async r => {
+            const ws = r.data?.data?.wallets || [];
+            setWallets(ws);
+            const all = await Promise.all(ws.map(w => walletApi.statement(w.walletRef, 200).then(x => (x.data?.data || []).map(o => ({ ...o, walletRef: w.walletRef }))).catch(() => [])));
+            setRows(all.flat().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))));
+        }).catch(() => setWallets([]));
+    }, []);
+    if (wallets === null) return <p style={{ color: 'var(--text-2)' }}>Loading…</p>;
+    if (wallets.length === 0) return <p style={{ color: 'var(--text-2)' }}>No wallet yet.</p>;
+    const shown = rows.filter(r => !ccy || r.currency === ccy);
+    return (
+        <>
+            {wallets.length > 1 && <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+                {['', ...wallets.map(w => w.currency)].map(c => (
+                    <button key={c || 'all'} onClick={() => setCcy(c)} style={{ padding: '6px 14px', borderRadius: 16, border: '1px solid var(--border)', fontWeight: 700, fontSize: 12,
+                        background: ccy === c ? '#06A3DA' : 'var(--bg-card)', color: ccy === c ? 'white' : 'var(--text)', cursor: 'pointer' }}>{c || 'All'}</button>
+                ))}
+            </div>}
+            {shown.length === 0 && <p style={{ color: 'var(--text-2)' }}>No wallet transactions yet.</p>}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {shown.map(r => {
+                    const id = r.op_ref + r.kind + r.walletRef;
+                    const cr = r.direction === 'CR';
+                    return (
+                        <div key={id} onClick={() => setOpen(open === id ? null : id)} style={{ cursor: 'pointer' }}>
+                            <div style={{ background: 'var(--bg-card)', borderRadius: 14, padding: '14px 20px', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 14 }}>
+                                <div style={{ width: 40, height: 40, borderRadius: 12, background: cr ? 'rgba(52,173,84,0.12)' : 'rgba(6,163,218,0.1)', color: cr ? '#34AD54' : '#06A3DA',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 18 }}>{cr ? '↓' : '↑'}</div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontWeight: 700, color: 'var(--text)' }}>{KIND[r.kind] || r.kind}</div>
+                                    <div style={{ fontSize: 12, color: 'var(--text-2)' }}>{fmtDate(String(r.created_at).replace(' ', 'T'))}{r.counterparty ? ` · ${r.counterparty}` : ''}</div>
+                                </div>
+                                <div style={{ fontWeight: 800, color: cr ? '#34AD54' : 'var(--text)' }}>{cr ? '+' : '−'}{formatAmount(r.amount_minor, r.currency)}</div>
+                            </div>
+                            {open === id && <Details items={[
+                                ['Type', KIND[r.kind] || r.kind], ['Amount', `${cr ? '+' : '−'}${formatAmount(r.amount_minor, r.currency)}`],
+                                ['With', r.counterparty], ['Reference', r.reference || r.op_ref], ['Wallet', `${r.currency} · ${r.walletRef}`],
+                                ['Date', fmtDate(String(r.created_at).replace(' ', 'T'))],
+                            ]} />}
+                        </div>
+                    );
+                })}
+            </div>
+        </>
     );
 }
