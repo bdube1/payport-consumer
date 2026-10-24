@@ -69,22 +69,21 @@ export default function Cards() {
 
 function AddCard({ form, options, onClose, onDone }) {
     const [wallets, setWallets] = useState([]);
-    const [walletRef, setWalletRef] = useState('');
     const [scheme, setScheme] = useState('VISA');
     const [nickname, setNickname] = useState('');
     const [address, setAddress] = useState('');
     const [pin, setPin] = useState('');
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
-    useEffect(() => { walletApi.list().then(r => { const w = r.data?.data?.wallets || []; setWallets(w); setWalletRef(w[0]?.walletRef || ''); }).catch(() => {}); }, []);
+    useEffect(() => { walletApi.list().then(r => setWallets(r.data?.data?.wallets || [])).catch(() => {}); }, []);
     const schemes = (options?.schemes || [{ scheme: 'VISA' }, { scheme: 'ZIMSWITCH' }]).map(x => x.scheme);
-    // ZimSwitch cards are linked to a ZWG wallet.
-    const usable = wallets.filter(w => scheme !== 'ZIMSWITCH' || w.currency === 'ZWG');
-    useEffect(() => { if (!usable.some(w => w.walletRef === walletRef)) setWalletRef(usable[0]?.walletRef || ''); }, [scheme, wallets.length]); // eslint-disable-line react-hooks/exhaustive-deps
-    const ok = walletRef && nickname.trim() && pin.length >= 4 && (form === 'VIRTUAL' || address.trim().length >= 5) && !busy;
+    // VISA: the USD wallet. ZimSwitch (dual interface): the USD and ZWG wallets together.
+    const linked = scheme === 'VISA' ? wallets.filter(w => w.currency === 'USD') : wallets.filter(w => w.currency === 'USD' || w.currency === 'ZWG');
+    const linkedText = linked.length ? `Linked to your ${linked.map(w => w.currency).join(' and ')} wallet${linked.length > 1 ? 's' : ''}` : scheme === 'VISA' ? 'Open a USD wallet first' : 'Open a USD or ZWG wallet first';
+    const ok = linked.length > 0 && nickname.trim() && pin.length >= 4 && (form === 'VIRTUAL' || address.trim().length >= 5) && !busy;
     const submit = async () => {
         setBusy(true); setError('');
-        try { await walletApi.requestCard({ walletRef, scheme, form, nickname: nickname.trim(), deliveryAddress: form === 'PHYSICAL' ? address.trim() : null, pin }); onDone(); }
+        try { await walletApi.requestCard({ scheme, form, nickname: nickname.trim(), deliveryAddress: form === 'PHYSICAL' ? address.trim() : null, pin }); onDone(); }
         catch (e) { setError(msg(e, 'The card could not be requested.')); }
         finally { setBusy(false); }
     };
@@ -93,10 +92,10 @@ function AddCard({ form, options, onClose, onDone }) {
             <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', borderRadius: 18, padding: 22, width: '100%', maxWidth: 440 }}>
                 <h3 style={{ margin: 0, color: 'var(--text)' }}>New {form === 'VIRTUAL' ? 'virtual' : 'physical'} card</h3>
                 {error && <p style={{ color: '#e53e3e', margin: '10px 0 0' }}>{error}</p>}
-                <label style={lbl}>Wallet</label>
-                <select style={input} value={walletRef} onChange={e => setWalletRef(e.target.value)}>{usable.map(w => <option key={w.walletRef} value={w.walletRef}>{w.currency} · {w.walletRef}</option>)}</select>
+
                 <label style={lbl}>Card</label>
                 <select style={input} value={scheme} onChange={e => setScheme(e.target.value)}>{schemes.map(s => <option key={s} value={s}>{s === 'ZIMSWITCH' ? 'ZimSwitch' : 'VISA'}</option>)}</select>
+                <p style={{ margin: '8px 0 0', fontSize: 13, color: linked.length ? 'var(--text-2)' : '#e53e3e' }}>{linkedText}</p>
                 <label style={lbl}>Nickname</label>
                 <input style={input} value={nickname} maxLength={40} onChange={e => setNickname(e.target.value)} />
                 {form === 'PHYSICAL' && <><label style={lbl}>Delivery address</label><input style={input} value={address} onChange={e => setAddress(e.target.value)} /></>}
@@ -176,6 +175,7 @@ export function CardDetail() {
                         <SchemeMark scheme={c.scheme} />
                     </div>
                 </div>
+                <p style={{ fontSize: 13, color: 'var(--text-2)', margin: '12px 0 0' }}>Linked to {(c.currencies || [c.currency]).join(' and ')} {(c.currencies || []).length > 1 ? 'wallets' : 'wallet'}</p>
                 {err && <p style={{ color: '#e53e3e' }}>{err}</p>}
                 {c.status === 'ACTIVE' || c.status === 'FROZEN' ? (
                     <button onClick={() => setAsk(blocked ? 'UNBLOCK' : 'BLOCK')} style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 26, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text)', fontSize: 16, fontWeight: 700, fontFamily: 'inherit', padding: 0 }}>
