@@ -1,24 +1,25 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/AuthContext';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import FloatingChat from './components/layout/FloatingChat';
 import Home from './pages/Home';
-import Checkout from './pages/Checkout';
-import PaymentLink from './pages/PaymentLink';
-import Airtime from './pages/Airtime';
-import Data from './pages/Data';
-import Bills from './pages/Bills';
-import Processing from './pages/Processing';
-import Status from './pages/Status';
-import Help from './pages/Help';
-import Register from './pages/Register';
+const Checkout = lazy(() => import('./pages/Checkout'));
+const PaymentLink = lazy(() => import('./pages/PaymentLink'));
+const Airtime = lazy(() => import('./pages/Airtime'));
+const Data = lazy(() => import('./pages/Data'));
+const Bills = lazy(() => import('./pages/Bills'));
+const Processing = lazy(() => import('./pages/Processing'));
+const Status = lazy(() => import('./pages/Status'));
+const Help = lazy(() => import('./pages/Help'));
+const Register = lazy(() => import('./pages/Register'));
 import Login from './pages/Login';
-import History from './pages/History';
-import Beneficiaries from './pages/Beneficiaries';
-import Account from './pages/Account';
-import ZimSwitchWidget from './pages/ZimSwitchWidget';
-import Wallet from './pages/Wallet';
+const History = lazy(() => import('./pages/History'));
+const Beneficiaries = lazy(() => import('./pages/Beneficiaries'));
+const Account = lazy(() => import('./pages/Account'));
+const ZimSwitchWidget = lazy(() => import('./pages/ZimSwitchWidget'));
+const Wallet = lazy(() => import('./pages/Wallet'));
 import Dashboard from './pages/Dashboard';
 import AppShell from './components/shell/AppShell';
 import Cards, { CardDetail } from './pages/Cards';
@@ -53,7 +54,7 @@ export default function App() {
     return (
         <AuthProvider>
             <BrowserRouter>
-                <Routes>
+                <Suspense fallback={<div style={{ padding: 60, textAlign: 'center' }}>Loading…</div>}><Routes>
                     <Route path="/" element={<Area><HomeRoute /></Area>} />
                     <Route path="/checkout/:sessionId" element={<Checkout />} />
                     <Route path="/pay/:slug" element={<PaymentLink />} />
@@ -86,7 +87,7 @@ export default function App() {
                     <Route path="/account" element={
                         <PrivateRoute><Area><Account /></Area></PrivateRoute>
                     } />
-                </Routes>
+                </Routes></Suspense>
                 <FloatingChat />
             </BrowserRouter>
         </AuthProvider>
