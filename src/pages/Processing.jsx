@@ -59,7 +59,7 @@ function outcomeOf(tx) {
 // NO_RESPONSE while delivering: final for now, but delivery is still being confirmed, so keep
 // checking slowly (the SMS / push also tells the customer).
 function keepCheckingSlowly(tx) {
-    return outcomeOf(tx) === 'NO_RESPONSE' && tx?.status === 'FULFILMENT_PENDING';
+    return outcomeOf(tx) === 'NO_RESPONSE' && ['FULFILMENT_PENDING', 'PAYMENT_CONFIRMED', 'FULFILMENT_RETRY'].includes(tx?.status);
 }
 
 function getStepState(stepIdx, statusInfo, status) {
@@ -264,7 +264,7 @@ export default function Processing() {
     const isFailed        = isPaymentFailed || isFulfilFailed;
     const isRefunded      = outcome === 'REFUNDED';
     const isCancelled     = outcome === 'CANCELLED';
-    const isPending       = IN_PROGRESS.includes(outcome) || isConfirmingDelivery;
+    const isPending       = IN_PROGRESS.includes(outcome);
     const isStillChecking = isConfirmingDelivery;
     const isCardPayment   = ['ZIMSWITCH','VISA','MASTERCARD'].includes(transaction?.paymentMethodCode);
 
@@ -470,6 +470,13 @@ export default function Processing() {
                         <div style={{ display: 'flex', gap: 10 }}>
                             <button onClick={() => navigate('/')} style={btnStyle('secondary')}>Home</button>
                             <button onClick={() => navigate('/help')} style={btnStyle('danger')}>Contact Support</button>
+                        </div>
+                    )}
+
+                    {(isConfirmingDelivery || isCancelled) && (
+                        <div style={{ display: 'flex', gap: 10 }}>
+                            <button onClick={() => navigate('/')} style={btnStyle('secondary')}>Home</button>
+                            <button onClick={() => navigate(`/status/${ref}`)} style={btnStyle('primary')}>Track</button>
                         </div>
                     )}
 
