@@ -47,10 +47,10 @@ export function AuthProvider({ children }) {
         }
     };
 
-    const register = async (fullName, phone, pin) => {
+    const register = async (fullName, phone, pin, idNumber) => {
         setLoading(true);
         try {
-            const res = await authApi.register({ fullName, phone, pin });
+            const res = await authApi.register({ fullName, phone, pin, idNumber });
             const { userData, token } = extractAuthData(res);
 
             // Fallback to submitted values if gateway response is missing them

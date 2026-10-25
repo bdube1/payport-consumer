@@ -7,7 +7,7 @@ export default function Register() {
   const navigate = useNavigate();
   const { register, loading } = useAuth();
 
-  const [form, setForm] = useState({ fullName: '', phone: '', pin: '', confirmPin: '' });
+  const [form, setForm] = useState({ fullName: '', phone: '', idNumber: '', pin: '', confirmPin: '' });
   const [error, setError] = useState('');
   const [step, setStep] = useState(1); // 1=details, 2=pin
   const [showPin, setShowPin] = useState(false);
@@ -22,6 +22,9 @@ export default function Register() {
     const normalized = normalizePhone(form.phone);
     if (!/^\+263\d{9}$/.test(normalized)) {
       return 'Enter a valid Zimbabwe mobile number (e.g. 0771234567)';
+    }
+    if (!/^[A-Z0-9][A-Z0-9/-]{3,39}$/.test(form.idNumber.replace(/\s/g, '').toUpperCase())) {
+      return 'Enter your national ID number (e.g. 63-123456A42)';
     }
     return null;
   };
@@ -45,7 +48,7 @@ export default function Register() {
     setError('');
 
     const normalized = normalizePhone(form.phone);
-    const result = await register(form.fullName.trim(), normalized, form.pin);
+    const result = await register(form.fullName.trim(), normalized, form.pin, form.idNumber.replace(/\s/g, '').toUpperCase());
     if (result.success) {
       navigate('/', { replace: true });
     } else {
@@ -158,6 +161,20 @@ export default function Register() {
                 <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11, marginTop: 6 }}>
                   You'll use this number to log in
                 </p>
+              </div>
+
+              <div style={{ marginBottom: 28, marginTop: -12 }}>
+                <label style={labelStyle}>ID Number</label>
+                <input
+                  value={form.idNumber}
+                  onChange={e => update('idNumber', e.target.value.toUpperCase())}
+                  placeholder="e.g. 63-123456A42"
+                  autoCapitalize="characters"
+                  onKeyDown={e => e.key === 'Enter' && handleStep1()}
+                  style={inputStyle}
+                  onFocus={e => e.target.style.borderColor = '#06A3DA'}
+                  onBlur={e => e.target.style.borderColor = 'rgba(6,163,218,0.25)'}
+                />
               </div>
 
               <button onClick={handleStep1} disabled={loading} style={btnPrimaryStyle}>

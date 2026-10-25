@@ -1033,6 +1033,41 @@
   },
   {
    "method": "GET",
+   "path": "/api/v1/admin/roles",
+   "access": null
+  },
+  {
+   "method": "POST",
+   "path": "/api/v1/admin/roles",
+   "access": null
+  },
+  {
+   "method": "GET",
+   "path": "/api/v1/admin/roles/catalog",
+   "access": null
+  },
+  {
+   "method": "GET",
+   "path": "/api/v1/admin/roles/me",
+   "access": null
+  },
+  {
+   "method": "DELETE",
+   "path": "/api/v1/admin/roles/{code}",
+   "access": null
+  },
+  {
+   "method": "PUT",
+   "path": "/api/v1/admin/roles/{code}",
+   "access": null
+  },
+  {
+   "method": "POST",
+   "path": "/api/v1/admin/roles/{code}/reset",
+   "access": null
+  },
+  {
+   "method": "GET",
    "path": "/api/v1/admin/rules/{party}",
    "access": null
   },
@@ -1167,6 +1202,11 @@
    "access": null
   },
   {
+   "method": "POST",
+   "path": "/api/v1/admin/ussd/simulate",
+   "access": null
+  },
+  {
    "method": "GET",
    "path": "/api/v1/admin/wallet-balances",
    "access": null
@@ -1224,6 +1264,11 @@
   {
    "method": "PUT",
    "path": "/api/v1/admin/whatsapp/settings",
+   "access": null
+  },
+  {
+   "method": "POST",
+   "path": "/api/v1/admin/whatsapp/simulate",
    "access": null
   },
   {
