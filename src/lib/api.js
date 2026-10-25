@@ -22,7 +22,7 @@ const redirectToLogin = () => {
     localStorage.removeItem('pp_user');
 
     // Redirect to login page
-    window.location.href = '/login';
+    window.location.href = '/login?timeout=1';
 };
 
 // ===== Per-transaction access tokens =====

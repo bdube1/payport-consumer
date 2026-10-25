@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/AuthContext';
+import { useIdleLogout } from './lib/idle';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import FloatingChat from './components/layout/FloatingChat';
@@ -50,9 +51,20 @@ function PrivateRoute({ children }) {
     return user ? children : <Navigate to="/login" replace />;
 }
 
+/** Signs a registered customer out after the consumer time-out without activity. */
+function IdleGuard() {
+    const { user, logout } = useAuth();
+    useIdleLogout(user ? localStorage.getItem('pp_token') : null, 'consumer', () => {
+        logout();
+        window.location.href = '/login?timeout=1';
+    }, 10);
+    return null;
+}
+
 export default function App() {
     return (
         <AuthProvider>
+            <IdleGuard />
             <BrowserRouter>
                 <Suspense fallback={<div style={{ padding: 60, textAlign: 'center' }}>Loading…</div>}><Routes>
                     <Route path="/" element={<Area><HomeRoute /></Area>} />

@@ -10,7 +10,7 @@ export default function Login() {
   const [phone, setPhone] = useState('');
   const [pin, setPin] = useState('');
   const [showPin, setShowPin] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(() => (new URLSearchParams(window.location.search).get('timeout') ? 'Your session timed out. Please sign in again.' : ''));
 
   const handleSubmit = async () => {
     setError('');
