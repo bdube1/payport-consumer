@@ -77,7 +77,7 @@ export default function Login() {
               <input
                 value={phone}
                 onChange={e => setPhone(e.target.value)}
-                placeholder="077 123 4567"
+               
                 onKeyDown={e => e.key === 'Enter' && document.getElementById('pin-input').focus()}
                 style={{ flex: 1, padding: '14px 14px', background: 'transparent', border: 'none', color: 'white', fontSize: 15, outline: 'none' }}
               />
@@ -94,7 +94,7 @@ export default function Login() {
                 value={pin}
                 onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
                 type={showPin ? 'text' : 'password'}
-                placeholder="• • • •"
+               
                 maxLength={4}
                 onKeyDown={e => e.key === 'Enter' && handleSubmit()}
                 style={{

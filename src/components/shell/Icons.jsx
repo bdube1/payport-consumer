@@ -35,6 +35,8 @@ const PATHS = {
     back: [P('M19 12H5', 1), P('m12 19-7-7 7-7', 2)],
     menu: [P('M4 6h16M4 12h16M4 18h16', 1)],
     close: [P('M6 6l12 12M18 6 6 18', 1)],
+    sun: [C(12, 12, 4, 1), P('M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4', 2)],
+    moon: [P('M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z', 1)],
 };
 
 export default function Icon({ name, size = 22, color = 'currentColor', stroke = 2, style }) {

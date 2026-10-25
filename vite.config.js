@@ -9,6 +9,6 @@ export default defineConfig({
     }
   },
   preview: {
-    allowedHosts: ['app.payport.africa']
+    allowedHosts: ['app.payport.africa', 'app-staging.payport.africa', 'localhost']
   }
 })

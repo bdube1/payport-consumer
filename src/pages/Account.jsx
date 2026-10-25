@@ -64,21 +64,21 @@ export default function Account() {
                     <input
                         type="password" inputMode="numeric" maxLength={4} value={currentPin}
                         onChange={e => setCurrentPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                        style={{ ...inputStyle, marginBottom: 18 }} placeholder="••••"
+                        style={{ ...inputStyle, marginBottom: 18 }}
                     />
 
                     <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: C.dark, marginBottom: 6 }}>New PIN</label>
                     <input
                         type="password" inputMode="numeric" maxLength={4} value={newPin}
                         onChange={e => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                        style={{ ...inputStyle, marginBottom: 18 }} placeholder="••••"
+                        style={{ ...inputStyle, marginBottom: 18 }}
                     />
 
                     <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: C.dark, marginBottom: 6 }}>Confirm New PIN</label>
                     <input
                         type="password" inputMode="numeric" maxLength={4} value={confirmPin}
                         onChange={e => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                        style={{ ...inputStyle, marginBottom: 24 }} placeholder="••••"
+                        style={{ ...inputStyle, marginBottom: 24 }}
                     />
 
                     <button type="submit" disabled={saving} style={{

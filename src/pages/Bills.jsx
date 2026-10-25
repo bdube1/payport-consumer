@@ -334,7 +334,7 @@ export default function Bills() {
                     summary={accountVerified ? `${account} · ${accountName}` : ''}
                 >
                     <input
-                        value={account} onChange={e => setAccount(e.target.value)} placeholder={catalogue[biller?.code]?.accountHint || `Enter ${biller?.field}`}
+                        value={account} onChange={e => setAccount(e.target.value)}
                         style={{ width: '100%', padding: '14px 18px', border: '2px solid rgba(6,163,218,0.2)', borderRadius: 12, fontSize: 15, outline: 'none', background: 'var(--light)', marginBottom: 8 }}
                     />
                     {validatingAccount && <p style={{ fontSize: 12.5, color: 'var(--text-2)' }}>Verifying account...</p>}
@@ -384,7 +384,7 @@ export default function Bills() {
                 {/* 4. Amount (standard billers only — Nyaradzo's total is computed from the month selector above) */}
                 <FlowSection title={`Amount (${selectedCurrency || 'USD'})`} subtitle={`Min ${selectedCurrency === 'USD' ? '$' : 'ZWG'}${minAmount.toFixed(2)} · Max ${selectedCurrency === 'USD' ? '$' : 'ZWG'}${maxAmount.toFixed(2)}`} show={accountVerified && !isNyaradzo} accent="#06A3DA" done={amountReady} summary={amountReady ? `${selectedCurrency}${parseFloat(amount).toFixed(2)}` : ''}>
                     <input
-                        value={amount} onChange={e => setAmount(e.target.value)} type="number" step="0.01" placeholder="0.00"
+                        value={amount} onChange={e => setAmount(e.target.value)} type="number" step="0.01"
                         style={{ width: '100%', padding: '14px 18px', border: `2px solid ${amountError ? '#dc2626' : 'rgba(6,163,218,0.2)'}`, borderRadius: 12, fontSize: 16, outline: 'none', background: 'var(--light)' }}
                     />
                     {amountError && <p style={{ fontSize: 11.5, color: '#dc2626', marginTop: 6 }}>⚠️ {amountError}</p>}
@@ -408,7 +408,7 @@ export default function Bills() {
                     <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{getPaymentFieldLabel()}</label>
                     <div style={{ display: 'flex', border: '2px solid rgba(6,163,218,0.2)', borderRadius: 12, overflow: 'hidden', background: 'var(--light)' }}>
                         <div style={{ padding: '14px 16px', background: 'linear-gradient(135deg, #06A3DA, #0487b8)', color: 'white', fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>🇿🇼 +263</div>
-                        <input value={phone} onChange={e => { setPhoneTouched(true); setPhone(e.target.value); }} placeholder={getPaymentFieldPlaceholder()} style={{ flex: 1, padding: '14px 16px', border: 'none', background: 'transparent', fontSize: 15, outline: 'none' }} />
+                        <input value={phone} onChange={e => { setPhoneTouched(true); setPhone(e.target.value); }} style={{ flex: 1, padding: '14px 16px', border: 'none', background: 'transparent', fontSize: 15, outline: 'none' }} />
                     </div>
                     {paymentMethod === 'WALLET' && <WalletPin value={walletPin} onChange={setWalletPin} />}
                 </FlowSection>

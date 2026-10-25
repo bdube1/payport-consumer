@@ -197,7 +197,7 @@ export default function History() {
                             const sc = STATUS_COLORS[tx.status] || { bg: 'rgba(107,114,128,0.15)', color: 'var(--text-2)', label: tx.status };
 
                             // Get recipient identifier (phone number or account number)
-                            const recipient = tx.recipientIdentifier || tx.recipientPhone || '—';
+                            const recipient = tx.toName || tx.recipientIdentifier || tx.recipientPhone || '—';
 
                             // Get product name
                             const productName = tx.productName || getProductName(tx.productTypeCode);
@@ -307,7 +307,7 @@ function TxDetails({ tx, productName, recipient, status }) {
     const token = tx.voucherToken || tx.token || tx.fulfilmentToken;
     return (
         <Details items={[
-            ['Reference', tx.reference], ['What', productName], ['To', recipient], ['Amount', formatAmount(tx.totalCents ?? tx.amountCents, tx.currency)],
+            ['Reference', tx.reference], ['Trxn Type', productName], ['To', recipient], ['Amount', formatAmount(tx.totalCents ?? tx.amountCents, tx.currency)],
             ['Paid with', METHOD[tx.paymentMethodCode] || tx.paymentMethodCode || tx.paymentMethod], ['Status', status],
             ['Date', fmtDate(tx.createdAt || tx.initiatedAt)], ['Token', token],
         ]}>
@@ -354,13 +354,13 @@ function WalletHistory() {
                                     display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 18 }}>{cr ? '↓' : '↑'}</div>
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ fontWeight: 700, color: 'var(--text)' }}>{KIND[r.kind] || r.kind}</div>
-                                    <div style={{ fontSize: 12, color: 'var(--text-2)' }}>{fmtDate(String(r.created_at).replace(' ', 'T'))}{r.counterparty ? ` · ${r.counterparty}` : ''}</div>
+                                    <div style={{ fontSize: 12, color: 'var(--text-2)' }}>{fmtDate(String(r.created_at).replace(' ', 'T'))}{(r.to_name || r.counterparty) ? ` · ${r.to_name || r.counterparty}` : ''}</div>
                                 </div>
                                 <div style={{ fontWeight: 800, color: cr ? '#34AD54' : 'var(--text)' }}>{cr ? '+' : '−'}{formatAmount(r.amount_minor, r.currency)}</div>
                             </div>
                             {open === id && <Details items={[
-                                ['Type', KIND[r.kind] || r.kind], ['Amount', `${cr ? '+' : '−'}${formatAmount(r.amount_minor, r.currency)}`],
-                                ['With', r.counterparty], ['Reference', r.reference || r.op_ref], ['Wallet', `${r.currency} · ${r.walletRef}`],
+                                ['Trxn Type', KIND[r.kind] || r.kind], ['Amount', `${cr ? '+' : '−'}${formatAmount(r.amount_minor, r.currency)}`],
+                                ['With', r.to_name || r.counterparty], ['Reference', r.reference || r.op_ref], ['Wallet', `${r.currency} · ${r.walletRef}`],
                                 ['Date', fmtDate(String(r.created_at).replace(' ', 'T'))],
                             ]} />}
                         </div>

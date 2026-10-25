@@ -253,7 +253,7 @@ export default function Data() {
                 <FlowSection title="Recipient number" accent="#06A3DA" show={!!selectedCurrency} done={isValidRecipient} summary={isValidRecipient ? normalizePhone(recipientPhone) : ''}>
                     <div style={{ display: 'flex', border: `2px solid ${isValidRecipient ? 'rgba(52,173,84,0.5)' : detectedNetwork && !isValidRecipient ? '#dc2626' : 'rgba(6,163,218,0.2)'}`, borderRadius: 12, overflow: 'hidden', background: 'var(--light)' }}>
                         <div style={{ padding: '14px 16px', background: 'linear-gradient(135deg, #06A3DA, #0487b8)', color: 'white', fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>🇿🇼 +263</div>
-                        <input value={recipientPhone} onChange={e => setRecipientPhone(e.target.value)} placeholder="077 123 4567" style={{ flex: 1, padding: '14px 16px', border: 'none', background: 'transparent', fontSize: 15, outline: 'none' }} />
+                        <input value={recipientPhone} onChange={e => setRecipientPhone(e.target.value)} style={{ flex: 1, padding: '14px 16px', border: 'none', background: 'transparent', fontSize: 15, outline: 'none' }} />
                         {networkLoading && <div style={{ padding: '14px 16px' }}><div style={{ width: 20, height: 20, border: '2px solid rgba(6,163,218,0.2)', borderTop: '2px solid #06A3DA', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /></div>}
                         {!networkLoading && detectedNetwork && isValidRecipient && <div style={{ padding: '14px 16px', color: '#34AD54' }}>✓</div>}
                         {!networkLoading && detectedNetwork && !isValidRecipient && <div style={{ padding: '14px 16px', color: '#dc2626' }}>✗</div>}
@@ -315,7 +315,7 @@ export default function Data() {
                     <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{getPaymentFieldLabel()}</label>
                     <div style={{ display: 'flex', border: '2px solid rgba(6,163,218,0.2)', borderRadius: 12, overflow: 'hidden', background: 'var(--light)' }}>
                         <div style={{ padding: '14px 16px', background: 'linear-gradient(135deg, #06A3DA, #0487b8)', color: 'white', fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>🇿🇼 +263</div>
-                        <input value={paymentIdentifier} onChange={e => { setPaymentIdentifierTouched(true); setPaymentIdentifier(e.target.value); }} placeholder={getPaymentFieldPlaceholder()} style={{ flex: 1, padding: '14px 16px', border: 'none', background: 'transparent', fontSize: 15, outline: 'none' }} />
+                        <input value={paymentIdentifier} onChange={e => { setPaymentIdentifierTouched(true); setPaymentIdentifier(e.target.value); }} style={{ flex: 1, padding: '14px 16px', border: 'none', background: 'transparent', fontSize: 15, outline: 'none' }} />
                     </div>
                     {paymentMethod === 'WALLET' && <WalletPin value={walletPin} onChange={setWalletPin} />}
                 </FlowSection>

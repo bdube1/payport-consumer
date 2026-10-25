@@ -221,7 +221,7 @@ export default function Home() {
                                         <input
                                             value={quickPhone}
                                             onChange={e => setQuickPhone(e.target.value)}
-                                            placeholder="077 123 4567"
+                                           
                                             style={{ flex: 1, padding: '14px 14px', background: 'transparent', border: 'none', color: 'white', fontSize: 15, outline: 'none' }}
                                         />
                                         {/* Spinner or network tick inside the input */}

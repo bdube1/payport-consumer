@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../lib/AuthContext';
+import { useTheme } from '../../lib/theme.jsx';
 import { authApi, transactionsApi } from '../../lib/api';
 import Icon from './Icons';
 import '../../styles/shell.css';
@@ -11,6 +12,7 @@ const stamp = (v) => { const t = Array.isArray(v) ? new Date(v[0], v[1] - 1, v[2
 /** Signed-in customer layout: sidebar, top bar with notifications and account menu. */
 export default function AppShell({ children }) {
     const { user, logout } = useAuth();
+    const { dark, toggle } = useTheme();
     const navigate = useNavigate();
     const location = useLocation();
     const [open, setOpen] = useState(false);
@@ -55,6 +57,9 @@ export default function AppShell({ children }) {
             <div className="pp-main">
                 <header className="pp-top">
                     <button className="pp-burger" onClick={() => setOpen(true)} aria-label="Menu"><Icon name="menu" size={26} /></button>
+                    <button className="pp-bell" onClick={toggle} aria-label={dark ? 'Light mode' : 'Dark mode'} title={dark ? 'Light mode' : 'Dark mode'}>
+                        <Icon name={dark ? 'sun' : 'moon'} size={24} />
+                    </button>
                     <button className="pp-bell" onClick={openActivity} aria-label="Notifications"><Icon name="bell" size={26} />{unread && <i />}</button>
                     <span className="pp-topsep" />
                     <div style={{ position: 'relative' }}>
@@ -65,6 +70,7 @@ export default function AppShell({ children }) {
                         </button>
                         {menu && <div className="pp-menu">
                             <Link to="/account">Profile</Link>
+                            <button onClick={() => { toggle(); setMenu(false); }}>{dark ? 'Light mode' : 'Dark mode'}</button>
                             <button onClick={signOut}>Logout</button>
                         </div>}
                     </div>
