@@ -152,7 +152,7 @@ export default function Status() {
                             value={query}
                             onChange={e => setQuery(e.target.value)}
                             onKeyDown={e => e.key === 'Enter' && lookup()}
-                            placeholder="PP-WEB-20260309-000001"
+                           
                             style={{ flex: 1, padding: '14px 18px', border: '2px solid rgba(6,163,218,0.2)', borderRadius: 12, fontSize: 15, outline: 'none', background: 'var(--light)', fontFamily: 'monospace' }}
                         />
                         <button onClick={() => lookup()} disabled={loading} style={{

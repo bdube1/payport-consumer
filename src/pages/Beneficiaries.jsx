@@ -204,7 +204,7 @@ export default function Beneficiaries() {
                                 <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-2)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Full Name *</label>
                                 <input
                                     value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                                    placeholder="e.g. Tendai Moyo"
+                                   
                                     style={{ width: '100%', padding: '12px 14px', borderRadius: 10, border: '1.5px solid var(--border)', background: 'var(--bg-2)', color: 'var(--text)', fontSize: 14, fontFamily: 'Nunito, sans-serif', outline: 'none', boxSizing: 'border-box' }}
                                 />
                             </div>
@@ -214,7 +214,7 @@ export default function Beneficiaries() {
                                     <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-2)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Phone Number *</label>
                                     <input
                                         value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                                        placeholder="07X XXX XXXX" type="tel"
+                                        type="tel"
                                         style={{ width: '100%', padding: '12px 14px', borderRadius: 10, border: '1.5px solid var(--border)', background: 'var(--bg-2)', color: 'var(--text)', fontSize: 14, fontFamily: 'Nunito, sans-serif', outline: 'none', boxSizing: 'border-box' }}
                                     />
                                     {form.phone && (() => {

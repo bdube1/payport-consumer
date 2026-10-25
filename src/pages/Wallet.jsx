@@ -37,6 +37,7 @@ export default function Wallet() {
     const [state, setState] = useState({ loading: true, enabled: false, wallets: [] });
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
+    const [done, setDone] = useState('');
     const tab = ACTIONS.some(([k]) => k === params.get('a')) ? params.get('a') : 'topup';
     const [selected, setSelected] = useState('');
     const [busy, setBusy] = useState(false);
@@ -57,12 +58,21 @@ export default function Wallet() {
     const wallet = state.wallets.find(w => w.walletRef === selected) || state.wallets[0];
     const run = async (fn, ok) => {
         setBusy(true); setError(''); setNotice('');
-        try { const r = await fn(); setNotice(ok(r?.data?.data || {})); await load(); }
+        try { const r = await fn(); setDone(ok(r?.data?.data || {})); await load(); }
         catch (e) { setError(msg(e, 'That did not work. Please try again.')); }
         finally { setBusy(false); }
     };
 
     if (state.loading) return <Page><div style={card}>Loading your wallet…</div></Page>;
+    // A completed payment, transfer or conversion stays on a success screen until it is closed.
+    if (done) return (
+        <div style={{ maxWidth: 520, margin: '40px auto', ...card, textAlign: 'center', padding: '40px 28px' }}>
+            <div style={{ width: 88, height: 88, borderRadius: '50%', background: C.green, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: 46, fontWeight: 800 }}>✓</div>
+            <h2 style={{ margin: '0 0 10px', color: 'var(--text)' }}>Successful</h2>
+            <p style={{ color: 'var(--text-2)', fontSize: 15.5, lineHeight: 1.5, margin: '0 0 28px', whiteSpace: 'pre-line' }}>{done}</p>
+            <button onClick={() => { setDone(''); navigate('/dashboard'); }} style={btn(true, C.primary)}>Close</button>
+        </div>
+    );
     if (!state.enabled && state.wallets.length === 0) {
         return <Page><div style={card}>
             <h3 style={{ marginTop: 0, color: C.dark }}>PayPort Wallet</h3>
@@ -166,13 +176,13 @@ function TopUp({ wallet, user, navigate, setError }) {
     return <>
         <h4 style={{ margin: 0, color: 'var(--text)' }}>Top up {wallet.currency} wallet</h4>
         <span style={label}>Amount ({wallet.currency})</span>
-        <input style={input} value={amount} onChange={e => setAmount(e.target.value)} inputMode="decimal" placeholder="0.00" />
+        <input style={input} value={amount} onChange={e => setAmount(e.target.value)} inputMode="decimal" />
         <span style={label}>Pay with</span>
         <select style={input} value={method} onChange={e => setMethod(e.target.value)}>
             {methods.map(m => <option key={m.code} value={m.code}>{m.name}</option>)}
         </select>
         <span style={label}>Paying phone number</span>
-        <input style={input} value={phone} onChange={e => setPhone(e.target.value)} placeholder="+263771234567" />
+        <input style={input} value={phone} onChange={e => setPhone(e.target.value)} />
         <button disabled={!ok} onClick={go} style={btn(ok)}>{busy ? 'Starting…' : `Top up ${cents ? formatAmount(cents, wallet.currency) : ''}`}</button>
     </>;
 }
@@ -188,9 +198,9 @@ function Send({ wallet, busy, run }) {
     return <>
         <h4 style={{ margin: 0, color: 'var(--text)' }}>Send money</h4>
         <span style={label}>To (phone number or wallet number)</span>
-        <input style={input} value={to} onChange={e => setTo(e.target.value)} placeholder="+263771234567 or W…" />
+        <input style={input} value={to} onChange={e => setTo(e.target.value)} />
         <span style={label}>Amount ({wallet.currency})</span>
-        <input style={input} value={amount} onChange={e => setAmount(e.target.value)} inputMode="decimal" placeholder="0.00" />
+        <input style={input} value={amount} onChange={e => setAmount(e.target.value)} inputMode="decimal" />
         <ChargeLine charge={charge} currency={wallet.currency} />
         <span style={label}>PIN</span>
         <input style={input} type="password" inputMode="numeric" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))} />
@@ -215,7 +225,7 @@ function Convert({ wallet, wallets, busy, run, setError }) {
     return <>
         <h4 style={{ margin: 0, color: 'var(--text)' }}>Convert between your wallets</h4>
         <span style={label}>From {wallet.currency}, amount</span>
-        <input style={input} value={amount} onChange={e => { setAmount(e.target.value); setQuote(null); }} inputMode="decimal" placeholder="0.00" />
+        <input style={input} value={amount} onChange={e => { setAmount(e.target.value); setQuote(null); }} inputMode="decimal" />
         <span style={label}>To</span>
         <select style={input} value={to} onChange={e => { setTo(e.target.value); setQuote(null); }}>
             {targets.map(t => <option key={t.currency}>{t.currency}</option>)}
@@ -268,7 +278,7 @@ function CashOut({ wallet, busy, run, setError }) {
     if (!agent) return <>
         <h4 style={{ margin: 0, color: 'var(--text)' }}>Cash out at an agent</h4>
         <span style={label}>Agent code</span>
-        <input style={codeInput} value={code} onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" placeholder="000000" />
+        <input style={codeInput} value={code} onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" />
         <button disabled={code.length !== 6} onClick={find} style={btn(code.length === 6, C.primary)}>Continue</button>
     </>;
     const ok = cents > 0 && pin.length >= 4 && !busy;
@@ -281,7 +291,7 @@ function CashOut({ wallet, busy, run, setError }) {
         </div>
         <button onClick={reset} style={{ background: 'none', border: 'none', color: C.primary, fontWeight: 700, cursor: 'pointer', padding: '8px 0' }}>Not this agent</button>
         <span style={label}>Amount ({wallet.currency})</span>
-        <input style={input} value={amount} onChange={e => setAmount(e.target.value)} inputMode="decimal" placeholder="0.00" />
+        <input style={input} value={amount} onChange={e => setAmount(e.target.value)} inputMode="decimal" />
         <ChargeLine charge={charge} currency={wallet.currency} />
         <span style={label}>PIN</span>
         <input style={input} type="password" inputMode="numeric" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))} />
@@ -296,7 +306,6 @@ function PayMerchant({ wallet, busy, run, setError }) {
     const [code, setCode] = useState('');
     const [merchant, setMerchant] = useState(null);
     const [amount, setAmount] = useState('');
-    const [note, setNote] = useState('');
     const [pin, setPin] = useState('');
     const cents = toMinor(amount);
     const charge = useCharge('MERCHANT_PAYMENT', wallet, cents);
@@ -306,7 +315,7 @@ function PayMerchant({ wallet, busy, run, setError }) {
         try { const r = await walletApi.merchant(c); setMerchant(r.data?.data); }
         catch (e) { setError(msg(e, 'No merchant with that code.')); }
     };
-    const reset = () => { setCode(''); setMerchant(null); setAmount(''); setNote(''); setPin(''); };
+    const reset = () => { setCode(''); setMerchant(null); setAmount(''); setPin(''); };
     if (!merchant) return <>
         <h4 style={{ margin: 0, color: 'var(--text)' }}>Pay a merchant</h4>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 14 }}>
@@ -329,7 +338,7 @@ function PayMerchant({ wallet, busy, run, setError }) {
         }} />}
         {mode === 'code' && <>
             <span style={label}>Merchant code</span>
-            <input style={codeInput} value={code} onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" placeholder="000000" />
+            <input style={codeInput} value={code} onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" />
             <button disabled={code.length !== 6} onClick={() => find(code)} style={btn(code.length === 6, C.primary)}>Continue</button>
         </>}
     </>;
@@ -345,13 +354,11 @@ function PayMerchant({ wallet, busy, run, setError }) {
         <button onClick={reset} style={{ background: 'none', border: 'none', color: C.primary, fontWeight: 700, cursor: 'pointer', padding: '8px 0' }}>Not this merchant</button>
         {!takes && <p style={{ color: C.red, fontSize: 13 }}>{merchant.name} takes {merchant.currencies.join(', ')}. Choose that wallet above.</p>}
         <span style={label}>Amount ({wallet.currency})</span>
-        <input style={input} value={amount} onChange={e => setAmount(e.target.value)} inputMode="decimal" placeholder="0.00" />
+        <input style={input} value={amount} onChange={e => setAmount(e.target.value)} inputMode="decimal" />
         <ChargeLine charge={charge} currency={wallet.currency} />
-        <span style={label}>Note (optional)</span>
-        <input style={input} value={note} onChange={e => setNote(e.target.value)} maxLength={80} />
         <span style={label}>PIN</span>
         <input style={input} type="password" inputMode="numeric" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))} />
-        <button disabled={!ok} onClick={() => run(() => walletApi.payMerchant(merchant.code, wallet.currency, cents, pin, note.trim() || null),
+        <button disabled={!ok} onClick={() => run(() => walletApi.payMerchant(merchant.code, wallet.currency, cents, pin, null),
             d => `Paid ${formatAmount(cents, wallet.currency)} to ${d.merchantName || merchant.name}.`).then(reset)} style={btn(ok)}>
             Pay {cents ? formatAmount(cents, wallet.currency) : ''}
         </button>

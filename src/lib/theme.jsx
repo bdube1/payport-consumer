@@ -1,4 +1,4 @@
-// Light and dark mode. The choice is remembered on this device; the first visit follows the device setting.
+// Light and dark mode. The choice is remembered on this device; the first visit starts in light.
 import { createContext, useContext, useEffect, useState } from 'react';
 
 const KEY = 'pp_theme';
@@ -8,7 +8,7 @@ function initial() {
   let t = null;
   try { t = localStorage.getItem(KEY); } catch { /* storage blocked */ }
   if (t === 'dark' || t === 'light') return t === 'dark';
-  return !!window.matchMedia?.('(prefers-color-scheme: dark)').matches;
+  return false;
 }
 
 export function ThemeProvider({ children }) {

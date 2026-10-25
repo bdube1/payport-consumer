@@ -135,7 +135,7 @@ export default function Register() {
                 <input
                   value={form.fullName}
                   onChange={e => update('fullName', e.target.value)}
-                  placeholder="e.g. Tinashe Moyo"
+                 
                   onKeyDown={e => e.key === 'Enter' && document.getElementById('phone-input').focus()}
                   style={inputStyle}
                   onFocus={e => e.target.style.borderColor = '#06A3DA'}
@@ -153,7 +153,7 @@ export default function Register() {
                     id="phone-input"
                     value={form.phone}
                     onChange={e => update('phone', e.target.value)}
-                    placeholder="077 123 4567"
+                   
                     onKeyDown={e => e.key === 'Enter' && handleStep1()}
                     style={{ flex: 1, padding: '14px 14px', background: 'transparent', border: 'none', color: 'white', fontSize: 15, outline: 'none' }}
                   />
@@ -168,7 +168,7 @@ export default function Register() {
                 <input
                   value={form.idNumber}
                   onChange={e => update('idNumber', e.target.value.toUpperCase())}
-                  placeholder="e.g. 63-123456A42"
+                 
                   autoCapitalize="characters"
                   onKeyDown={e => e.key === 'Enter' && handleStep1()}
                   style={inputStyle}
@@ -210,7 +210,7 @@ export default function Register() {
                     value={form.pin}
                     onChange={e => update('pin', e.target.value.replace(/\D/g, '').slice(0, 4))}
                     type={showPin ? 'text' : 'password'}
-                    placeholder="• • • •"
+                   
                     maxLength={4}
                     onKeyDown={e => e.key === 'Enter' && document.getElementById('confirm-pin').focus()}
                     style={{ ...inputStyle, letterSpacing: '0.3em', fontSize: 24, paddingRight: 50 }}
@@ -233,7 +233,7 @@ export default function Register() {
                   value={form.confirmPin}
                   onChange={e => update('confirmPin', e.target.value.replace(/\D/g, '').slice(0, 4))}
                   type={showPin ? 'text' : 'password'}
-                  placeholder="• • • •"
+                 
                   maxLength={4}
                   onKeyDown={e => e.key === 'Enter' && handleSubmit()}
                   style={{ ...inputStyle, letterSpacing: '0.3em', fontSize: 24 }}

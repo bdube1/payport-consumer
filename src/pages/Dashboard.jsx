@@ -116,7 +116,7 @@ function RecentTransactions() {
                 const d = r.data?.data || r.data || {};
                 for (const t of (d.content || (Array.isArray(d) ? d : []))) {
                     if ((t.productTypeCode || '').startsWith('WALLET')) continue;
-                    out.push({ key: 'p' + t.reference, at: time(t.createdAt || t.initiatedAt), title: t.productName || 'Payment', sub: t.recipientIdentifier,
+                    out.push({ key: 'p' + t.reference, at: time(t.createdAt || t.initiatedAt), title: t.productName || 'Payment', sub: t.toName || t.recipientIdentifier,
                         amount: formatAmount(t.totalCents ?? t.amountCents, t.currency), out: true, status: STATUS[t.status] || t.status, to: `/history` });
                 }
             } catch { /* none */ }
@@ -125,7 +125,7 @@ function RecentTransactions() {
                 const ws = w.data?.data?.wallets || [];
                 const all = await Promise.all(ws.map(x => walletApi.statement(x.walletRef, 5).then(s => s.data?.data || []).catch(() => [])));
                 for (const o of all.flat()) {
-                    out.push({ key: 'w' + o.op_ref + o.kind, at: time(o.created_at), title: KIND[o.kind] || o.kind, sub: o.counterparty,
+                    out.push({ key: 'w' + o.op_ref + o.kind, at: time(o.created_at), title: KIND[o.kind] || o.kind, sub: o.to_name || o.counterparty,
                         amount: `${o.direction === 'CR' ? '+' : '−'}${formatAmount(o.amount_minor, o.currency)}`, out: o.direction !== 'CR', to: '/history?tab=wallet' });
                 }
             } catch { /* none */ }

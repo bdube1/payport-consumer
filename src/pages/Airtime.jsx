@@ -253,12 +253,12 @@ export default function Airtime() {
                     </div>
 
                     <Field label="Your number" hint={user ? `✓ Registered as ${user.fullName} — cannot be changed` : 'Your number for payment and confirmation'}>
-                        <PhoneInput value={myPhone} onChange={setMyPhone} placeholder="07X XXX XXXX or +263..." />
+                        <PhoneInput value={myPhone} onChange={setMyPhone} />
                     </Field>
 
                     {!selfTopup && (
                         <Field label="Recipient number" hint="The number that will receive the airtime">
-                            <PhoneInput value={recipientPhone} onChange={setRecipientPhone} placeholder="07X XXX XXXX or +263..." />
+                            <PhoneInput value={recipientPhone} onChange={setRecipientPhone} />
                         </Field>
                     )}
 
@@ -295,7 +295,7 @@ export default function Airtime() {
                     <Field label={`Amount (${selectedCurrency})`}>
                         <input
                             value={customAmt} onChange={e => { setCustomAmt(e.target.value); setAmountCents(null); }}
-                            placeholder={`Min ${formatAmount(minCents, selectedCurrency)} · Max ${formatAmount(maxCents, selectedCurrency)}`}
+                           
                             style={{ width: '100%', padding: '14px 16px', borderRadius: 12, fontSize: 15, border: '1.5px solid var(--border)', background: 'var(--bg-2)', color: 'var(--text)', outline: 'none' }}
                         />
                     </Field>
@@ -320,7 +320,7 @@ export default function Airtime() {
                         <PhoneInput
                             value={paymentIdentifier}
                             onChange={v => setPaymentIdentifier(v)}
-                            placeholder={getPaymentFieldPlaceholder()}
+                           
                         />
                     </Field>
                     {paymentMethod === 'WALLET' && <WalletPin value={walletPin} onChange={setWalletPin} />}

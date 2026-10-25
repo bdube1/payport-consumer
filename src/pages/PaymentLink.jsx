@@ -72,7 +72,7 @@ export default function PaymentLink() {
                         <input
                             type="number" step="0.01" min="0.01" value={customAmount}
                             onChange={e => setCustomAmount(e.target.value)}
-                            placeholder="0.00" style={S.amountInput}
+                            style={S.amountInput}
                         />
                     </>
                 ) : (

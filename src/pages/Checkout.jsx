@@ -293,7 +293,7 @@ export default function Checkout() {
                                 <label style={S.label}>Mobile money number</label>
                                 <input
                                     type="tel" value={phone} onChange={e => setPhone(e.target.value)}
-                                    placeholder="+263771234567" style={S.input} required
+                                    style={S.input} required
                                 />
                             </>
                         )}
@@ -301,7 +301,7 @@ export default function Checkout() {
                         <label style={S.label}>Email {isCardMethod ? '' : '(optional)'} — for your receipt</label>
                         <input
                             type="email" value={email} onChange={e => setEmail(e.target.value)}
-                            placeholder="you@example.com" style={S.input}
+                            style={S.input}
                         />
 
                         {isCardMethod && (
