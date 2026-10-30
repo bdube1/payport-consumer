@@ -13,6 +13,7 @@ const Data = lazy(() => import('./pages/Data'));
 const Bills = lazy(() => import('./pages/Bills'));
 const Processing = lazy(() => import('./pages/Processing'));
 const Status = lazy(() => import('./pages/Status'));
+const ChannelPin = lazy(() => import('./pages/ChannelPin'));
 const Help = lazy(() => import('./pages/Help'));
 const Register = lazy(() => import('./pages/Register'));
 import Login from './pages/Login';
@@ -70,6 +71,7 @@ export default function App() {
                     <Route path="/" element={<Area><HomeRoute /></Area>} />
                     <Route path="/checkout/:sessionId" element={<Checkout />} />
                     <Route path="/pay/:slug" element={<PaymentLink />} />
+                    <Route path="/pin/:token" element={<ChannelPin />} />
                     <Route path="/airtime" element={<Area><Airtime /></Area>} />
                     <Route path="/data" element={<Area><Data /></Area>} />
                     <Route path="/bills" element={<Area><Bills /></Area>} />

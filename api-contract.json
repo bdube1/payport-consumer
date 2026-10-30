@@ -413,6 +413,11 @@
   },
   {
    "method": "GET",
+   "path": "/api/v1/admin/dashboard/volume",
+   "access": null
+  },
+  {
+   "method": "GET",
    "path": "/api/v1/admin/dispute-timelines",
    "access": null
   },
@@ -558,6 +563,21 @@
   },
   {
    "method": "GET",
+   "path": "/api/v1/admin/health-lookups",
+   "access": null
+  },
+  {
+   "method": "PUT",
+   "path": "/api/v1/admin/health-lookups",
+   "access": null
+  },
+  {
+   "method": "POST",
+   "path": "/api/v1/admin/health-lookups/check",
+   "access": null
+  },
+  {
+   "method": "GET",
    "path": "/api/v1/admin/health-status",
    "access": null
   },
@@ -569,6 +589,11 @@
   {
    "method": "GET",
    "path": "/api/v1/admin/integrations",
+   "access": null
+  },
+  {
+   "method": "GET",
+   "path": "/api/v1/admin/integrations/connectivity",
    "access": null
   },
   {
@@ -1097,6 +1122,11 @@
    "access": null
   },
   {
+   "method": "PUT",
+   "path": "/api/v1/admin/session-timeouts",
+   "access": null
+  },
+  {
    "method": "GET",
    "path": "/api/v1/admin/settlements",
    "access": null
@@ -1222,6 +1252,11 @@
    "access": null
   },
   {
+   "method": "GET",
+   "path": "/api/v1/admin/wallets/balances",
+   "access": null
+  },
+  {
    "method": "POST",
    "path": "/api/v1/admin/wallets/refunds/{reference}",
    "access": null
@@ -1247,6 +1282,11 @@
    "access": null
   },
   {
+   "method": "GET",
+   "path": "/api/v1/admin/wallets/{ref}/statement-report",
+   "access": null
+  },
+  {
    "method": "POST",
    "path": "/api/v1/admin/wallets/{ref}/status",
    "access": null
@@ -1269,6 +1309,11 @@
   {
    "method": "POST",
    "path": "/api/v1/admin/whatsapp/simulate",
+   "access": null
+  },
+  {
+   "method": "GET",
+   "path": "/api/v1/admin/whatsapp/simulate/outbox",
    "access": null
   },
   {
@@ -1433,7 +1478,17 @@
   },
   {
    "method": "POST",
+   "path": "/api/v1/bundles/admin/NETONE/sync",
+   "access": null
+  },
+  {
+   "method": "POST",
    "path": "/api/v1/bundles/admin/upload",
+   "access": null
+  },
+  {
+   "method": "GET",
+   "path": "/api/v1/bundles/admin/{provider}/all",
    "access": null
   },
   {
@@ -1514,6 +1569,16 @@
   {
    "method": "GET",
    "path": "/api/v1/callbacks/zimswitch/result",
+   "access": null
+  },
+  {
+   "method": "GET",
+   "path": "/api/v1/channel-pin/{token}",
+   "access": null
+  },
+  {
+   "method": "POST",
+   "path": "/api/v1/channel-pin/{token}",
    "access": null
   },
   {
@@ -2014,6 +2079,11 @@
   {
    "method": "POST",
    "path": "/api/v1/qr/resolve",
+   "access": null
+  },
+  {
+   "method": "GET",
+   "path": "/api/v1/session-timeouts",
    "access": null
   },
   {
