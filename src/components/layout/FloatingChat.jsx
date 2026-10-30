@@ -61,6 +61,8 @@ export default function FloatingChat() {
         setThinking(false);
     };
 
+    // The one-time PIN page shows nothing but the PIN form.
+    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/pin/')) return null;
     return (
         <>
             <div style={styles.stack}>
