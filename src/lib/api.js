@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { API_BASE } from './apiBase';
 
-const BASE = import.meta.env.VITE_API_URL || 'https://api.payport.africa';
+const BASE = API_BASE;
 export { BASE };
 
 const api = axios.create({

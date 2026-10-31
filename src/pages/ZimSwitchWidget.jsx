@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { transactionsApi } from '../lib/api';
+import { API_BASE } from '../lib/apiBase';
 
 const C = { primary: '#06A3DA', green: '#34AD54', dark: 'var(--text)', light: 'var(--light)' };
 
@@ -40,7 +41,7 @@ export default function ZimSwitchWidget() {
     const [scriptLoaded, setScriptLoaded] = useState(false);
     const scriptRef = useRef(null);
 
-    const BASE = import.meta.env.VITE_API_URL || 'https://api.payport.africa';
+    const BASE = API_BASE;
     // This is where OPPWa redirects the browser after card entry
     // The gateway ZimSwitchCallbackController handles this URL
     const shopperResultUrl = `${BASE}/api/v1/callbacks/zimswitch/result`;
