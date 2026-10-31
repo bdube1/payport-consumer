@@ -7,7 +7,7 @@ import { authApi } from '../lib/api';
 const C = { primary: '#06A3DA', green: '#34AD54', dark: 'var(--text)', accent: '#091E3E', red: '#e53e3e' };
 
 export default function Account() {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const navigate = useNavigate();
     const [currentPin, setCurrentPin] = useState('');
     const [newPin, setNewPin] = useState('');
@@ -29,8 +29,9 @@ export default function Account() {
         setSaving(true);
         try {
             await authApi.changePin(currentPin, newPin);
-            setSuccess('PIN changed successfully');
-            setCurrentPin(''); setNewPin(''); setConfirmPin('');
+            // Signed out after a PIN change: sign in again with the new PIN.
+            logout();
+            navigate('/login?changed=1', { replace: true });
         } catch (e) {
             setError(e.response?.data?.message || 'Could not change PIN. Please try again.');
         } finally {
