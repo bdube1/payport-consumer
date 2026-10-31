@@ -301,7 +301,7 @@ function Details({ items, children }) {
     );
 }
 
-const METHOD = { WALLET: 'PayPort Wallet', ECOCASH: 'EcoCash', ONEMONEY: 'OneMoney', OMARI: "O'mari", INNBUCKS: 'InnBucks', ZIMSWITCH: 'Card (ZimSwitch)' };
+const METHOD = { WALLET: 'Payport Wallet', ECOCASH: 'EcoCash', ONEMONEY: 'OneMoney', OMARI: "O'mari", INNBUCKS: 'InnBucks', ZIMSWITCH: 'Card (ZimSwitch)' };
 
 function TxDetails({ tx, productName, recipient, status }) {
     const token = tx.voucherToken || tx.token || tx.fulfilmentToken;

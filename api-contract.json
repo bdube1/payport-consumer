@@ -1727,11 +1727,6 @@
    "access": null
   },
   {
-   "method": "POST",
-   "path": "/api/v1/commerce/customer-code",
-   "access": null
-  },
-  {
    "method": "GET",
    "path": "/api/v1/commerce/events",
    "access": null
@@ -2269,11 +2264,6 @@
   {
    "method": "POST",
    "path": "/api/v1/store/quote",
-   "access": null
-  },
-  {
-   "method": "POST",
-   "path": "/api/v1/store/sign-in",
    "access": null
   },
   {

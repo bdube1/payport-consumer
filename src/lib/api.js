@@ -224,15 +224,15 @@ export async function startPayment(initiatePayload, payPayload) {
     return paid.data?.data || paid.data;
 }
 
-/** The PayPort wallet is offered only to a signed-in customer, and comes first (the default) for them. */
+/** The Payport wallet is offered only to a signed-in customer, and comes first (the default) for them. */
 export function visibleMethods(methods) {
     if (!isLoggedIn()) return methods.filter(m => m.code !== 'WALLET');
     const rest = methods.filter(m => m.code !== 'WALLET');
-    return [{ code: 'WALLET', name: 'PayPort Wallet', isActive: true, displayOrder: -1000 }, ...rest];
+    return [{ code: 'WALLET', name: 'Payport Wallet', isActive: true, displayOrder: -1000 }, ...rest];
 }
 
-// ===== WALLET (Phase 8; switched on by PayPort when licensed) =====
-// Countries and currencies PayPort serves (public).
+// ===== WALLET (Phase 8; switched on by Payport when licensed) =====
+// Countries and currencies Payport serves (public).
 export const marketsApi = { list: () => api.get('/api/v1/markets') };
 export async function liveCurrencies() {
     try {

@@ -30,10 +30,10 @@ export function useWalletBalances() {
     return b;
 }
 
-/** The option's name ("PayPort Wallet" for the wallet; balances are shown only on the home page). */
+/** The option's name ("Payport Wallet" for the wallet; balances are shown only on the home page). */
 export function methodLabel(m) {
     if (!m) return '';
-    return m.code === 'WALLET' ? 'PayPort Wallet' : m.name;
+    return m.code === 'WALLET' ? 'Payport Wallet' : m.name;
 }
 
 

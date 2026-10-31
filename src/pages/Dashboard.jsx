@@ -57,7 +57,7 @@ export default function Dashboard() {
                         ))}
                         {!state.loading && wallets.length === 0 && (
                             <Link to="/wallet?a=topup" className="pp-wcard">
-                                <div className="pp-wtop"><span className="pp-wicon"><Icon name="wallet" size={30} /></span><div className="pp-wname">PayPort Wallet</div></div>
+                                <div className="pp-wtop"><span className="pp-wicon"><Icon name="wallet" size={30} /></span><div className="pp-wname">Payport Wallet</div></div>
                                 <div className="pp-wbal" style={{ fontSize: 24 }}>{state.enabled ? 'Open your wallet' : 'Coming soon'}</div>
                             </Link>
                         )}
