@@ -51,17 +51,26 @@ export default function Checkout() {
     const [widgetScriptLoaded, setWidgetScriptLoaded] = useState(false);
     const widgetScriptRef = useRef(null);
     const pollRef = useRef(null);
+    const picked = useRef(false);
 
     const isCardMethod = method === 'ZIMSWITCH';
     const isWallet = method === 'WALLET';
     const [pin, setPin] = useState('');
     // A signed-in PayPort customer can also pay from their wallet (only if PayPort has switched wallets on).
-    const labels = isLoggedIn() ? { WALLET: 'PayPort Wallet', ...METHOD_LABELS } : METHOD_LABELS;
+    // Only the methods this business accepts (when the server says), the customer's choice from the store first.
+    const accepted = Array.isArray(session?.methods) ? session.methods : Object.keys(METHOD_LABELS);
+    const offered = Object.fromEntries(Object.entries(METHOD_LABELS).filter(([code]) => accepted.includes(code)));
+    const labels = isLoggedIn() ? { WALLET: 'PayPort Wallet', ...offered } : offered;
 
     const loadSession = async () => {
         try {
             const res = await checkoutApi.getSession(sessionId);
-            setSession(res.data?.data || res.data);
+            const s = res.data?.data || res.data;
+            setSession(s);
+            if (picked.current) return;
+            picked.current = true;
+            if (s?.preferredMethod && (s.methods || []).includes(s.preferredMethod)) setMethod(s.preferredMethod);
+            else if (!isLoggedIn() && Array.isArray(s?.methods) && s.methods.length && !s.methods.includes('ECOCASH')) setMethod(s.methods[0]);
             setLoadError('');
         } catch (e) {
             setLoadError(e.response?.data?.message || 'This checkout link is invalid or has expired.');
