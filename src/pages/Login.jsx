@@ -20,7 +20,9 @@ export default function Login() {
     const normalized = normalizePhone(phone);
     const result = await login(normalized, pin);
     if (result.success) {
-      navigate('/', { replace: true });
+      // Back to where sign-in was asked for (only a path on this site).
+      const next = new URLSearchParams(window.location.search).get('next');
+      navigate(next && next.startsWith('/') && !next.startsWith('//') ? next : '/', { replace: true });
     } else {
       setError(result.message);
     }

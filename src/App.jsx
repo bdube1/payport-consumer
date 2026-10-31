@@ -21,6 +21,7 @@ const Beneficiaries = lazy(() => import('./pages/Beneficiaries'));
 const Account = lazy(() => import('./pages/Account'));
 const ZimSwitchWidget = lazy(() => import('./pages/ZimSwitchWidget'));
 const Wallet = lazy(() => import('./pages/Wallet'));
+const StoreSignin = lazy(() => import('./pages/StoreSignin'));
 import Dashboard from './pages/Dashboard';
 import AppShell from './components/shell/AppShell';
 import Cards, { CardDetail } from './pages/Cards';
@@ -81,6 +82,7 @@ export default function App() {
                     <Route path="/help" element={<Area><Help /></Area>} />
                     <Route path="/register" element={<Register />} />
                     <Route path="/login" element={<Login />} />
+                    <Route path="/store-signin" element={<StoreSignin />} />
                     <Route path="/history" element={
                         <PrivateRoute><Area><History /></Area></PrivateRoute>
                     } />
