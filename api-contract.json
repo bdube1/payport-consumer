@@ -953,6 +953,16 @@
   },
   {
    "method": "GET",
+   "path": "/api/v1/admin/payments/live-readiness",
+   "access": null
+  },
+  {
+   "method": "POST",
+   "path": "/api/v1/admin/payments/store-live",
+   "access": null
+  },
+  {
+   "method": "GET",
    "path": "/api/v1/admin/platform/kyb/{merchantId}",
    "access": null
   },
@@ -1717,6 +1727,11 @@
    "access": null
   },
   {
+   "method": "POST",
+   "path": "/api/v1/commerce/customer-code",
+   "access": null
+  },
+  {
    "method": "GET",
    "path": "/api/v1/commerce/events",
    "access": null
@@ -1724,6 +1739,11 @@
   {
    "method": "GET",
    "path": "/api/v1/commerce/merchants/{merchantId}",
+   "access": null
+  },
+  {
+   "method": "POST",
+   "path": "/api/v1/commerce/messages",
    "access": null
   },
   {
@@ -1934,6 +1954,16 @@
   {
    "method": "POST",
    "path": "/api/v1/merchant/payment-links/{id}/disable",
+   "access": null
+  },
+  {
+   "method": "GET",
+   "path": "/api/v1/merchant/payment-methods",
+   "access": null
+  },
+  {
+   "method": "PUT",
+   "path": "/api/v1/merchant/payment-methods",
    "access": null
   },
   {
@@ -2219,6 +2249,46 @@
   {
    "method": "GET",
    "path": "/api/v1/session-timeouts",
+   "access": null
+  },
+  {
+   "method": "GET",
+   "path": "/api/v1/store/orders",
+   "access": null
+  },
+  {
+   "method": "POST",
+   "path": "/api/v1/store/orders",
+   "access": null
+  },
+  {
+   "method": "GET",
+   "path": "/api/v1/store/orders/{ref}",
+   "access": null
+  },
+  {
+   "method": "POST",
+   "path": "/api/v1/store/quote",
+   "access": null
+  },
+  {
+   "method": "POST",
+   "path": "/api/v1/store/sign-in",
+   "access": null
+  },
+  {
+   "method": "GET",
+   "path": "/api/v1/store/stores",
+   "access": null
+  },
+  {
+   "method": "GET",
+   "path": "/api/v1/store/stores/{slug}",
+   "access": null
+  },
+  {
+   "method": "POST",
+   "path": "/api/v1/store/stores/{slug}/slots",
    "access": null
   },
   {
