@@ -60,7 +60,9 @@ export default function Checkout() {
     // Only the methods this business accepts (when the server says), the customer's choice from the store first.
     const accepted = Array.isArray(session?.methods) ? session.methods : Object.keys(METHOD_LABELS);
     const offered = Object.fromEntries(Object.entries(METHOD_LABELS).filter(([code]) => accepted.includes(code)));
-    const labels = isLoggedIn() ? { WALLET: 'Payport Wallet', ...offered } : offered;
+    const walletOffered = isLoggedIn() || accepted.includes('WALLET');
+    const labels = walletOffered ? { WALLET: 'Payport Wallet', ...offered } : offered;
+    const signInForWallet = isWallet && !isLoggedIn();
 
     const loadSession = async () => {
         try {
@@ -70,7 +72,7 @@ export default function Checkout() {
             if (picked.current) return;
             picked.current = true;
             if (s?.preferredMethod && (s.methods || []).includes(s.preferredMethod)) setMethod(s.preferredMethod);
-            else if (!isLoggedIn() && Array.isArray(s?.methods) && s.methods.length && !s.methods.includes('ECOCASH')) setMethod(s.methods[0]);
+            else if (!isLoggedIn() && Array.isArray(s?.methods) && s.methods.length && !s.methods.includes('ECOCASH')) setMethod(s.methods.find(m => m !== 'WALLET') || s.methods[0]);
             setLoadError('');
         } catch (e) {
             setLoadError(e.response?.data?.message || 'This checkout link is invalid or has expired.');
@@ -135,6 +137,10 @@ export default function Checkout() {
         e.preventDefault();
         setPayError('');
 
+        if (signInForWallet) {
+            window.location.href = '/login?next=' + encodeURIComponent('/checkout/' + sessionId);
+            return;
+        }
         if (isWallet) {
             if (pin.length < 4) { setPayError('Enter your Payport PIN'); return; }
             setSubmitting(true);
@@ -287,7 +293,7 @@ export default function Checkout() {
                             ))}
                         </div>
 
-                        {isWallet && (
+                        {isWallet && !signInForWallet && (
                             <>
                                 <label style={S.label}>Payport PIN</label>
                                 <input
@@ -307,18 +313,22 @@ export default function Checkout() {
                             </>
                         )}
 
-                        <label style={S.label}>Email {isCardMethod ? '' : '(optional)'} — for your receipt</label>
-                        <input
-                            type="email" value={email} onChange={e => setEmail(e.target.value)}
-                            style={S.input}
-                        />
+                        {!isWallet && (
+                            <>
+                                <label style={S.label}>Email {isCardMethod ? '' : '(optional)'} — for your receipt</label>
+                                <input
+                                    type="email" value={email} onChange={e => setEmail(e.target.value)}
+                                    style={S.input}
+                                />
+                            </>
+                        )}
 
                         {isCardMethod && (
                             <p style={S.cardNote}>You'll enter your card details on the next screen, handled directly and securely by ZimSwitch — Payport never sees or stores your card number.</p>
                         )}
 
                         <button type="submit" disabled={submitting} style={S.payBtn}>
-                            {submitting ? 'Submitting…' : isCardMethod ? 'Continue to card payment' : `Pay ${amount}`}
+                            {submitting ? 'Submitting…' : signInForWallet ? 'Sign in to pay with Payport Wallet' : isCardMethod ? 'Continue to card payment' : `Pay ${amount}`}
                         </button>
                     </form>
                 )}

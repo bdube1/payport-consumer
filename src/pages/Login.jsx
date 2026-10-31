@@ -60,6 +60,11 @@ export default function Login() {
           <h2 style={{ fontSize: 22, fontWeight: 800, color: 'white', marginBottom: 6, letterSpacing: '-0.02em' }}>Sign in to Payport</h2>
           <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 14, marginBottom: 28 }}>Use your registered mobile number and PIN</p>
 
+          {!error && new URLSearchParams(window.location.search).get('changed') && (
+            <div style={{ background: 'rgba(52,173,84,0.12)', border: '1px solid rgba(52,173,84,0.3)', borderRadius: 10, padding: '12px 16px', marginBottom: 20, color: '#4ade80', fontSize: 13 }}>
+              PIN changed. Sign in with your new PIN.
+            </div>
+          )}
           {error && (
             <div style={{
               background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
