@@ -56,11 +56,11 @@ export default function Checkout() {
     const isCardMethod = method === 'ZIMSWITCH';
     const isWallet = method === 'WALLET';
     const [pin, setPin] = useState('');
-    // A signed-in PayPort customer can also pay from their wallet (only if PayPort has switched wallets on).
+    // A signed-in Payport customer can also pay from their wallet (only if Payport has switched wallets on).
     // Only the methods this business accepts (when the server says), the customer's choice from the store first.
     const accepted = Array.isArray(session?.methods) ? session.methods : Object.keys(METHOD_LABELS);
     const offered = Object.fromEntries(Object.entries(METHOD_LABELS).filter(([code]) => accepted.includes(code)));
-    const labels = isLoggedIn() ? { WALLET: 'PayPort Wallet', ...offered } : offered;
+    const labels = isLoggedIn() ? { WALLET: 'Payport Wallet', ...offered } : offered;
 
     const loadSession = async () => {
         try {
@@ -136,7 +136,7 @@ export default function Checkout() {
         setPayError('');
 
         if (isWallet) {
-            if (pin.length < 4) { setPayError('Enter your PayPort PIN'); return; }
+            if (pin.length < 4) { setPayError('Enter your Payport PIN'); return; }
             setSubmitting(true);
             try {
                 await walletApi.payCheckout(sessionId, pin);
@@ -289,7 +289,7 @@ export default function Checkout() {
 
                         {isWallet && (
                             <>
-                                <label style={S.label}>PayPort PIN</label>
+                                <label style={S.label}>Payport PIN</label>
                                 <input
                                     type="password" inputMode="numeric" maxLength={6} value={pin}
                                     onChange={e => setPin(e.target.value.replace(/\D/g, ''))} style={S.input} required

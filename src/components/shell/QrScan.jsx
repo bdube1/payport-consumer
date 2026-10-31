@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import jsQR from 'jsqr';
 
-/** A PayPort QR: PAYPORT-QR:<token> (current QRs), or an older QR / text holding the six-digit code. */
+/** A Payport QR: PAYPORT-QR:<token> (current QRs), or an older QR / text holding the six-digit code. */
 export function isPayportQr(data) {
     const s = String(data || '').trim();
     return /^PAYPORT-QR:[A-Z]{16}$/i.test(s) || /([1-9]\d{5})(?!.*\d)/.test(s);
@@ -25,7 +25,7 @@ export default function QrScan({ onCode, onError }) {
                 const hit = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
                 if (hit?.data) {
                     if (isPayportQr(hit.data)) { stopped = true; onCode(hit.data.trim()); return; }
-                    setStatus('That is not a PayPort merchant QR code.');
+                    setStatus('That is not a Payport merchant QR code.');
                 }
             }
             raf = requestAnimationFrame(tick);

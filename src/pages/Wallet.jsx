@@ -75,8 +75,8 @@ export default function Wallet() {
     );
     if (!state.enabled && state.wallets.length === 0) {
         return <Page><div style={card}>
-            <h3 style={{ marginTop: 0, color: C.dark }}>PayPort Wallet</h3>
-            <p style={{ color: C.muted }}>The PayPort wallet is not available yet. You can keep paying with mobile money and cards.</p>
+            <h3 style={{ marginTop: 0, color: C.dark }}>Payport Wallet</h3>
+            <p style={{ color: C.muted }}>The Payport wallet is not available yet. You can keep paying with mobile money and cards.</p>
             {error && <p style={{ color: C.red }}>{error}</p>}
         </div></Page>;
     }
