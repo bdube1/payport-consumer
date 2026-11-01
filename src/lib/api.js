@@ -278,6 +278,7 @@ export const checkoutApi = {
     getSession: (sessionId) => api.get(`/api/v1/checkout/${sessionId}`),
     qr: (sessionId) => api.get(`/api/v1/checkout/${sessionId}/qr`),
     pay: (sessionId, payload) => api.post(`/api/v1/checkout/${sessionId}/pay`, payload),
+    omariOtp: (sessionId, otp) => api.post(`/api/v1/checkout/${sessionId}/omari-otp`, { otp }),
 };
 
 export const paymentLinkApi = {
