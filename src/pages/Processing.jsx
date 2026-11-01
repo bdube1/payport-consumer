@@ -34,7 +34,7 @@ const STEPS = [
     { label: 'Payment',           icon: '💳' },
     { label: 'Payment Confirmed', icon: '✅' },
     { label: 'Delivering',        icon: '⚙️' },
-    { label: 'Delivered',         icon: '🎉' },
+    { label: 'Successful',        icon: '🎉' },
 ];
 
 // The screen is driven by the backend's `outcome` (the same answer every channel gives):
@@ -56,8 +56,7 @@ function outcomeOf(tx) {
     }
 }
 
-// NO_RESPONSE while delivering: final for now, but delivery is still being confirmed, so keep
-// checking slowly (the SMS / push also tells the customer).
+// NO_RESPONSE while completing the purchase: the page keeps waiting for the provider's final answer.
 function keepCheckingSlowly(tx) {
     return outcomeOf(tx) === 'NO_RESPONSE' && ['FULFILMENT_PENDING', 'PAYMENT_CONFIRMED', 'FULFILMENT_RETRY'].includes(tx?.status);
 }
@@ -190,7 +189,7 @@ export default function Processing() {
                 clearInterval(dotsRef.current);
                 if (keepCheckingSlowly(tx) && !slowRef.current) {
                     slowRef.current = true;
-                    intervalRef.current = setInterval(poll, 15000);
+                    intervalRef.current = setInterval(poll, 4000);
                 } else if (!keepCheckingSlowly(tx)) {
                     slowRef.current = false;
                 }
@@ -264,7 +263,7 @@ export default function Processing() {
     const isFailed        = isPaymentFailed || isFulfilFailed;
     const isRefunded      = outcome === 'REFUNDED';
     const isCancelled     = outcome === 'CANCELLED';
-    const isPending       = IN_PROGRESS.includes(outcome);
+    const isPending       = IN_PROGRESS.includes(outcome) || isConfirmingDelivery;
     const isStillChecking = isConfirmingDelivery;
     const isCardPayment   = ['ZIMSWITCH','VISA','MASTERCARD'].includes(transaction?.paymentMethodCode);
 
@@ -279,23 +278,22 @@ export default function Processing() {
             : isRefunded ? `linear-gradient(135deg, #8b5cf6, #6d28d9)`
                 : `linear-gradient(135deg, ${C.blue}, #0487b8)`;
 
-    const headline = isComplete      ? `${transaction?.productName || 'Order'} Delivered! 🎉`
+    const headline = isComplete      ? `${transaction?.productName || 'Payment'} successful 🎉`
         : isTimedOut      ? 'Payment not completed in time'
         : isPaymentFailed ? `${paymentMethodName} payment failed`
-            : isFulfilFailed  ? `${transaction?.productName || 'Order'} could not be delivered`
+            : isFulfilFailed  ? `${transaction?.productName || 'Purchase'} failed`
                 : isRefunded      ? 'Refunded'
                     : isCancelled     ? 'Cancelled'
-                        : isConfirmingDelivery ? 'Confirming delivery'
+                        : isConfirmingDelivery || statusInfo.stepIndex >= 2 ? `Payment approved${dots}`
                             : `Processing${dots}`;
 
     // No subtitle for payment failed since we have the message at the bottom
-    const subtitle = isComplete      ? 'Your airtime has been sent successfully.'
+    const subtitle = isComplete      ? `${transaction?.productName || 'Your payment'} was successful.`
         : isPaymentFailed ? ''
             : isFulfilFailed  ? ''
                 : isRefunded      ? (outcomeMessage || 'Your payment has been refunded.')
                     : isCancelled     ? 'This payment was cancelled.'
-                        : isStillChecking ? outcomeMessage
-                            : (outcomeMessage || 'Hang tight — this usually takes under 30 seconds.');
+                        : (outcomeMessage || 'Waiting for the payment result.');
 
     const handleTryAgain = () => navigate('/');
 
@@ -406,9 +404,9 @@ export default function Processing() {
                             <div style={{ fontSize: 16, flexShrink: 0 }}>{isStillChecking ? '⏳' : isCardPayment ? '💳' : '📱'}</div>
                             <p style={{ fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.4, margin: 0 }}>
                                 {isStillChecking
-                                    ? 'Your payment was received. We are confirming the delivery with the provider and will send you an SMS.'
+                                    ? 'Waiting for the provider\'s answer. Do not pay again; the result shows here.'
                                     : isCardPayment
-                                        ? 'Your card payment is being confirmed. This page updates automatically.'
+                                        ? 'Complete the card payment. The result shows here.'
                                         : <><strong>Check your phone</strong> for a payment prompt. This page updates automatically.</>
                                 }
                             </p>
@@ -444,9 +442,7 @@ export default function Processing() {
                                     of the actual reason, even when the backend
                                     had a specific one (e.g. Econet's own status
                                     codes, properly translated). */}
-                                ⚠️ Payment of <strong>{transaction?.currency || ''} {amount}</strong> received, but delivery failed.
-                                {outcomeMessage ? ` ${outcomeMessage} ` : ' '}
-                                We will deliver it or refund you — ref <strong>{ref}</strong>.
+                                ⚠️ {outcomeMessage || 'The provider could not complete it.'} Your payment of <strong>{transaction?.currency || ''} {amount}</strong> will be refunded. Ref <strong>{ref}</strong>.
                             </p>
                         </div>
                     )}
