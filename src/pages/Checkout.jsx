@@ -51,6 +51,21 @@ export default function Checkout() {
     const [widgetScriptLoaded, setWidgetScriptLoaded] = useState(false);
     const widgetScriptRef = useRef(null);
     const pollRef = useRef(null);
+    const [needsOtp, setNeedsOtp] = useState(false);
+    const [otp, setOtp] = useState('');
+    const [otpBusy, setOtpBusy] = useState(false);
+    const [otpError, setOtpError] = useState('');
+    const submitOtp = async () => {
+        if (!otp.trim()) return;
+        setOtpBusy(true); setOtpError('');
+        try {
+            await checkoutApi.omariOtp(sessionId, otp.trim());
+            setOtp('');
+            await loadSession();
+        } catch (e) {
+            setOtpError(e.response?.data?.message || 'The code could not be checked.');
+        } finally { setOtpBusy(false); }
+    };
     const picked = useRef(false);
 
     const isCardMethod = method === 'ZIMSWITCH';
@@ -182,6 +197,7 @@ export default function Checkout() {
                 setWidgetJsUrl(result.widgetJsUrl);
             }
             if (result.paymentCode) setPaymentCode(result.paymentCode);
+            if (result.requiresOtpEntry) setNeedsOtp(true);
             await loadSession();
         } catch (e) {
             setPayError(e.response?.data?.message || 'Could not submit payment. Please try again.');
@@ -253,7 +269,16 @@ export default function Checkout() {
                 {session.status === 'PENDING' && !widgetJsUrl && (
                     <div style={S.resultBlock}>
                         <div style={S.spinner} />
-                        {paymentCode ? <>
+                        {needsOtp ? <>
+                            <h2 style={S.title}>Enter your O'mari code</h2>
+                            <p style={S.muted}>O'mari has sent a code by SMS to {phone || session.customerPhone}.</p>
+                            {otpError && <p style={{ color: '#b91c1c', fontSize: 13 }}>{otpError}</p>}
+                            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                                <input value={otp} onChange={e => setOtp(e.target.value.replace(/\s/g, ''))} inputMode="numeric" maxLength={10} placeholder="Code"
+                                    style={{ flex: 1, padding: '12px 14px', fontSize: 18, letterSpacing: 4, borderRadius: 10, border: '1.5px solid var(--border)' }} />
+                                <button type="button" onClick={submitOtp} disabled={otpBusy || !otp.trim()} className="btn btn-primary" style={{ padding: '0 18px' }}>{otpBusy ? '…' : 'Confirm'}</button>
+                            </div>
+                        </> : paymentCode ? <>
                             <h2 style={S.title}>Approve in InnBucks</h2>
                             <div style={{ fontFamily: 'monospace', fontSize: 26, fontWeight: 800, letterSpacing: '0.08em', margin: '8px 0' }}>{paymentCode}</div>
                             <p style={S.muted}>Open the InnBucks app and approve this code. This page updates automatically.</p>
