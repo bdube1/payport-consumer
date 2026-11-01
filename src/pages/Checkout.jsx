@@ -254,6 +254,7 @@ export default function Checkout() {
                     <div style={S.resultBlock}>
                         <div style={S.errorIcon}>✕</div>
                         <h2 style={S.title}>Payment failed</h2>
+                        {session.failureReason && <p style={{ ...S.muted, color: '#b91c1c', fontWeight: 700 }}>{session.failureReason}</p>}
                         <p style={S.muted}>Your payment could not be completed. No money was deducted.</p>
                     </div>
                 )}
